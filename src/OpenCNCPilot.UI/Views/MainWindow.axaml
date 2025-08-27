@@ -1,0 +1,162 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OpenCNCPilot.UI.ViewModels"
+        xmlns:converters="using:OpenCNCPilot.UI.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        x:Class="OpenCNCPilot.UI.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{Binding WindowTitle}"
+        Icon="/Assets/avalonia-logo.ico"
+        Width="1200" Height="800"
+        MinWidth="800" MinHeight="600">
+
+  <Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainWindowViewModel/>
+  </Design.DataContext>
+
+  <DockPanel>
+    <!-- Status Bar at Top -->
+    <Border DockPanel.Dock="Top" Background="{DynamicResource SystemControlBackgroundAltMediumBrush}" 
+            Padding="10,5" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+        <!-- Connection Controls -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+          <ComboBox ItemsSource="{Binding AvailablePorts}" 
+                    SelectedItem="{Binding SelectedPort}"
+                    PlaceholderText="Select Port"
+                    MinWidth="120"/>
+          <Button Content="Refresh" Command="{Binding RefreshPortsCommand}" />
+          <Button Content="Connect" Command="{Binding ConnectCommand}" 
+                  IsEnabled="{Binding CanConnect}"/>
+          <Button Content="Disconnect" Command="{Binding DisconnectCommand}" 
+                  IsEnabled="{Binding IsConnected}"/>
+        </StackPanel>
+
+        <!-- Status -->
+        <TextBlock Grid.Column="1" Text="{Binding Status}" 
+                   VerticalAlignment="Center" Margin="20,0"/>
+
+        <!-- Position Display -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="15" Margin="20,0">
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <TextBlock Text="Machine:" FontWeight="Bold"/>
+            <TextBlock Text="{Binding MachinePosition.X, StringFormat=X: {0:F3}}"/>
+            <TextBlock Text="{Binding MachinePosition.Y, StringFormat=Y: {0:F3}}"/>
+            <TextBlock Text="{Binding MachinePosition.Z, StringFormat=Z: {0:F3}}"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <TextBlock Text="Work:" FontWeight="Bold"/>
+            <TextBlock Text="{Binding WorkPosition.X, StringFormat=X: {0:F3}}"/>
+            <TextBlock Text="{Binding WorkPosition.Y, StringFormat=Y: {0:F3}}"/>
+            <TextBlock Text="{Binding WorkPosition.Z, StringFormat=Z: {0:F3}}"/>
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Connection Indicator -->
+        <Border Grid.Column="3" Width="12" Height="12" CornerRadius="6" Margin="10,0">
+          <Border.Background>
+            <SolidColorBrush Color="{Binding IsConnected, Converter={x:Static converters:BooleanToColorConverter.Instance}, 
+                                            ConverterParameter=Green|Red}"/>
+          </Border.Background>
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- Main Content Area -->
+    <TabControl DockPanel.Dock="Bottom">
+      <!-- Machine Tab -->
+      <TabItem Header="Machine">
+        <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,300" Margin="10">
+          <!-- Control Panel -->
+          <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                  Padding="10" CornerRadius="5" Margin="10,0,0,10">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Machine Control" FontWeight="Bold" FontSize="16"/>
+              
+              <!-- Manual Control -->
+              <Expander Header="Manual Control" IsExpanded="True">
+                <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*,*" Margin="0,10,0,0">
+                  <!-- XY Control -->
+                  <Button Grid.Row="0" Grid.Column="1" Content="Y+" Margin="2"/>
+                  <Button Grid.Row="1" Grid.Column="0" Content="X-" Margin="2"/>
+                  <Button Grid.Row="1" Grid.Column="1" Content="Home" Margin="2"/>
+                  <Button Grid.Row="1" Grid.Column="2" Content="X+" Margin="2"/>
+                  <Button Grid.Row="2" Grid.Column="1" Content="Y-" Margin="2"/>
+                  
+                  <!-- Z Control (separate area) -->
+                  <StackPanel Grid.Row="0" Grid.Column="2" Grid.RowSpan="3" Spacing="5" Margin="10,0,0,0">
+                    <Button Content="Z+" />
+                    <Button Content="Z-" />
+                  </StackPanel>
+                </Grid>
+              </Expander>
+
+              <!-- File Operations -->
+              <Expander Header="File Operations">
+                <StackPanel Spacing="5" Margin="0,10,0,0">
+                  <Button Content="Load G-Code File" />
+                  <Button Content="Load Height Map" />
+                  <TextBlock Text="No file loaded" FontStyle="Italic" />
+                </StackPanel>
+              </Expander>
+            </StackPanel>
+          </Border>
+
+          <!-- Main Visualization Area -->
+          <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" 
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                  BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" 
+                  BorderThickness="1" CornerRadius="5">
+            <TextBlock Text="3D Visualization Area&#x0A;(To be implemented with SkiaSharp/OpenGL)" 
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       FontSize="16" Opacity="0.7" TextAlignment="Center"/>
+          </Border>
+
+          <!-- Log/Console Area -->
+          <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                  Padding="10" CornerRadius="5" Margin="10,10,0,0">
+            <Grid RowDefinitions="Auto,*">
+              <TextBlock Grid.Row="0" Text="Console" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+              <ScrollViewer Grid.Row="1">
+                <TextBox IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                         Text="OpenCNCPilot Cross-Platform v2.0&#x0A;Ready for connection...&#x0A;"
+                         Background="Transparent" BorderThickness="0"/>
+              </ScrollViewer>
+            </Grid>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <!-- File Tab -->
+      <TabItem Header="File">
+        <Grid Margin="10">
+          <TextBlock Text="File management and G-Code preview&#x0A;(To be implemented)" 
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     FontSize="16" Opacity="0.7" TextAlignment="Center"/>
+        </Grid>
+      </TabItem>
+
+      <!-- Probing Tab -->
+      <TabItem Header="Probing">
+        <Grid Margin="10">
+          <TextBlock Text="Height map probing and auto-leveling&#x0A;(To be implemented)" 
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     FontSize="16" Opacity="0.7" TextAlignment="Center"/>
+        </Grid>
+      </TabItem>
+
+      <!-- Settings Tab -->
+      <TabItem Header="Settings">
+        <Grid Margin="10">
+          <TextBlock Text="Application and GRBL settings&#x0A;(To be implemented)" 
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     FontSize="16" Opacity="0.7" TextAlignment="Center"/>
+        </Grid>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>
