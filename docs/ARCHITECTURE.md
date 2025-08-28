@@ -1,4 +1,26 @@
-# Arquitectura de OpenCNCPilot (Moderna)
+# Arquitectura UI Moderna (Avalonia)
+
+## GCodeViewport
+StyledProperties: `Zoom`, `RotationX`, `RotationY`, `PanX`, `PanY`, `Commands`, `FitRequestId`.
+Sensibilidades configurables: `RotateSensitivity` (deg/px), `PanSensitivity` (world/px), `ZoomStepFactor` (>1).
+Render: OpenGlControlBase + Skia (proyección ortográfica XY). Maneja ausencia de GL de forma segura.
+AutoFit: calcula bounds de `Commands`, ajusta `Zoom` y centra `PanX/PanY` al punto medio de los bounds.
+
+## MainWindowViewModel
+Expone propiedades espejo para el visor: `ViewerZoom`, `ViewerRotationX/Y`, `ViewerPanX/Y`, `ViewerRotateSensitivity`, `ViewerPanSensitivity`, `ViewerZoomStepFactor`.
+Comandos: `FitToView`, `ZoomIn/Out/Reset`, `Rotate*/Pan*`, `ResetViewCommand`.
+Persiste sensibilidades vía `ISettingsService` y recarga tras guardar en `SettingsWindow`.
+
+## SettingsWindow
+Usa `NumericUpDown` para validar rangos:
+  - Rotate: 0.05–2.0
+  - Pan: 0.001–1.0
+  - Zoom step: 1.01–1.5
+Los valores se clamping en el ViewModel para robustez adicional.
+
+## Testing
+Tests de VM y matemáticas del visor en `OpenCNCPilot.UI.Tests` (sin acceso GL).
+Parser y modelos en `OpenCNCPilot.Core.Tests`.# Arquitectura de OpenCNCPilot (Moderna)
 
 ## Visión General
 OpenCNCPilot se estructura en tres capas principales siguiendo principios de modularidad y portabilidad:

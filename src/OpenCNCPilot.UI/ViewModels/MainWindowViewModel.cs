@@ -38,6 +38,9 @@ public class MainWindowViewModel : ReactiveObject
     private double _viewerRotationY = 45.0;
     private double _viewerPanX = 0.0;
     private double _viewerPanY = 0.0;
+    private double _viewerRotateSensitivity = 0.3;
+    private double _viewerPanSensitivity = 0.02;
+    private double _viewerZoomStepFactor = 1.1;
 
     public MainWindowViewModel(ILogger<MainWindowViewModel> logger, ISerialPortService serialPortService, IDialogService dialogService, ISettingsService settingsService, IGCodeParser gcodeParser)
     {
@@ -64,6 +67,22 @@ public class MainWindowViewModel : ReactiveObject
         {
             var vm = (SettingsWindowViewModel?)App.Services?.GetService(typeof(SettingsWindowViewModel))
                      ?? new SettingsWindowViewModel(new UI.Services.JsonSettingsService());
+            void OnClose(object? s, bool saved)
+            {
+                if (saved)
+                {
+                    // refresh sensitivities from persisted settings
+                    _ = Dispatcher.UIThread.InvokeAsync(async () =>
+                    {
+                        var s1 = await _settingsService.LoadAsync();
+                        ViewerRotateSensitivity = s1.ViewerRotateSensitivity;
+                        ViewerPanSensitivity = s1.ViewerPanSensitivity;
+                        ViewerZoomStepFactor = s1.ViewerZoomStepFactor;
+                    });
+                }
+                vm.CloseRequested -= OnClose;
+            }
+            vm.CloseRequested += OnClose;
             var result = await ShowSettings.Handle(vm);
             _logger.LogInformation("Settings dialog closed with result: {Result}", result);
         });
@@ -107,6 +126,14 @@ public class MainWindowViewModel : ReactiveObject
         ZoomInCommand = ReactiveCommand.Create(() => { ViewerZoom = Math.Max(1e-6, ViewerZoom * 0.8); });
         ZoomOutCommand = ReactiveCommand.Create(() => { ViewerZoom = Math.Max(1e-6, ViewerZoom / 0.8); });
         ZoomResetCommand = ReactiveCommand.Create(() => { ViewerZoom = 1.0; });
+        ResetViewCommand = ReactiveCommand.Create(() =>
+        {
+            ViewerZoom = 1.0;
+            ViewerRotationX = 30.0;
+            ViewerRotationY = 45.0;
+            ViewerPanX = 0.0;
+            ViewerPanY = 0.0;
+        });
     RotateLeftCommand = ReactiveCommand.Create(() => { ViewerRotationY -= 5.0; });
     RotateRightCommand = ReactiveCommand.Create(() => { ViewerRotationY += 5.0; });
     RotateUpCommand = ReactiveCommand.Create(() => { ViewerRotationX = Math.Clamp(ViewerRotationX - 5.0, -89.0, 89.0); });
@@ -182,6 +209,9 @@ public class MainWindowViewModel : ReactiveObject
 
         // Initialize data
         RefreshPorts();
+
+        // Load viewer sensitivities from settings
+        _ = LoadViewerSettingsAsync();
 
         _logger.LogInformation("MainWindowViewModel initialized");
     }
@@ -266,6 +296,24 @@ public class MainWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref _viewerPanY, value);
     }
 
+    public double ViewerRotateSensitivity
+    {
+        get => _viewerRotateSensitivity;
+        set => this.RaiseAndSetIfChanged(ref _viewerRotateSensitivity, value);
+    }
+
+    public double ViewerPanSensitivity
+    {
+        get => _viewerPanSensitivity;
+        set => this.RaiseAndSetIfChanged(ref _viewerPanSensitivity, value);
+    }
+
+    public double ViewerZoomStepFactor
+    {
+        get => _viewerZoomStepFactor;
+        set => this.RaiseAndSetIfChanged(ref _viewerZoomStepFactor, value);
+    }
+
     #endregion
 
     #region Commands
@@ -281,6 +329,7 @@ public class MainWindowViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> ZoomInCommand { get; }
     public ReactiveCommand<Unit, Unit> ZoomOutCommand { get; }
     public ReactiveCommand<Unit, Unit> ZoomResetCommand { get; }
+    public ReactiveCommand<Unit, Unit> ResetViewCommand { get; }
     public ReactiveCommand<Unit, Unit> RotateLeftCommand { get; }
     public ReactiveCommand<Unit, Unit> RotateRightCommand { get; }
     public ReactiveCommand<Unit, Unit> RotateUpCommand { get; }
@@ -387,6 +436,22 @@ public class MainWindowViewModel : ReactiveObject
 
         const string header = "Warning! Parsing this file resulted in some warnings!\n\nDo not use OpenCNCPilot's edit functions unless you are sure that these warnings can be ignored!\n\nBe aware that the affected lines will likely move when using edit functions.";
         await _dialogService.ShowWarningsAsync(header, warnings);
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private async System.Threading.Tasks.Task LoadViewerSettingsAsync()
+    {
+        try
+        {
+            var s = await _settingsService.LoadAsync();
+            ViewerRotateSensitivity = s.ViewerRotateSensitivity;
+            ViewerPanSensitivity = s.ViewerPanSensitivity;
+            ViewerZoomStepFactor = s.ViewerZoomStepFactor;
+        }
+        catch { }
     }
 
     #endregion

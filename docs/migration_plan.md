@@ -45,6 +45,9 @@ Integración en UI (avance)
 - [ ] Implementar visualización 3D (OpenGL)
  - [x] PoC visor OpenGL/Skia (ejes básicos, AutoFit, zoom/fit)
  - [x] Rotación y pan (propiedades/commands MVVM) e interacción con ratón (drag/wheel)
+ - [x] Reset del visor (comando y botón en toolbar)
+ - [x] Sensibilidades configurables (Rotate/Pan/Zoom) con persistencia en Settings y bindings en `GCodeViewport`
+ - [x] AutoFit centra el encuadre ajustando `PanX/PanY` al punto medio de los bounds
 
 ## Fase 4: Testing y Estabilización (2 semanas)
 - [ ] Pruebas en Windows
@@ -62,9 +65,12 @@ Integración en UI (avance)
 
 Avances implementados (TDD Phase 3)
 - Tests UI: `ViewportMathTests` valida transformaciones (rotación X/Y y pan) y `MainWindowViewModel_ViewportTests` cubre comandos de zoom/fit.
+- Tests UI adicionales: `MainWindowViewModel_ViewportTests.ResetViewCommand_Resets_Viewer_Properties` y `GCodeViewport_SensitivitiesTests` (defaults y configurabilidad de sensibilidades).
 - Nuevo helper `ViewportMath` encapsula la proyección ortográfica con rotaciones X/Y y pan.
-- `GCodeViewport` integra rotación/pan (StyledProperties `RotationX`, `RotationY`, `PanX`, `PanY`) aplicadas en render Skia.
+- `GCodeViewport` integra rotación/pan (StyledProperties `RotationX`, `RotationY`, `PanX`, `PanY`) aplicadas en render Skia, y añade `RotateSensitivity`, `PanSensitivity`, `ZoomStepFactor` como `StyledProperty` para interacción configurable; `AutoFit()` ahora centra pan y ajusta `Zoom`.
 - `MainWindowViewModel` expone propiedades `ViewerRotationX/Y`, `ViewerPanX/Y` y comandos `Rotate*/Pan*`; `MainWindow.axaml` agrega bindings y botones de control.
+- `MainWindowViewModel` añade `ResetViewCommand` y propiedades `ViewerRotateSensitivity`, `ViewerPanSensitivity`, `ViewerZoomStepFactor`; `MainWindow.axaml` enlaza estas propiedades al `GCodeViewport` y agrega botón "Reset".
+- `SettingsWindow` incorpora campos para sensibilidades del visor (rotate/pan/zoom step) y las persiste vía `ISettingsService` (`JsonSettingsService`).
 - Tests ejecutan verde en Linux; CI filtra `Category!=RequiresHardware` para evitar dependencias de hardware/GL.
 
 - Tests UI (GRBL Settings): `MainWindowViewModel_GrblSettingsTests`
@@ -115,4 +121,9 @@ Release y Changelog
 - En runners headless puede no haber contexto GL; el control captura excepciones en init/render para no crashear.
 - Dependencias del sistema: puede requerir paquetes de X/GL (ej. `libgl1`, `libx11-6`); documentar para empaquetado.
 - Las pruebas de UI no ejercen GL; validan ViewModel y bindings para evitar fallos en entornos sin GL.
+
+Sensibilidades del visor (rangos y efecto)
+- RotateSensitivity (deg/pixel): recomendado 0.05–2.0; valores altos rotan muy rápido.
+- PanSensitivity (world units/pixel): recomendado 0.001–1.0; se multiplica por `Zoom` en el control para mantener sensación.
+- ZoomStepFactor (>1): recomendado 1.01–1.5; cuanto mayor, más brusco el zoom por tick.
 

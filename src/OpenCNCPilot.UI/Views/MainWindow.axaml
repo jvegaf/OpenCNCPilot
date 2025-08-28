@@ -125,7 +125,10 @@
                RotationY="{Binding ViewerRotationY}"
                PanX="{Binding ViewerPanX}"
                PanY="{Binding ViewerPanY}"
-               FitRequestId="{Binding FitRequestId}" />
+               FitRequestId="{Binding FitRequestId}"
+               RotateSensitivity="{Binding ViewerRotateSensitivity}"
+               PanSensitivity="{Binding ViewerPanSensitivity}"
+               ZoomStepFactor="{Binding ViewerZoomStepFactor}" />
     <!-- Overlay zoom toolbar -->
     <StackPanel Orientation="Horizontal" Spacing="6" Margin="10"
                 HorizontalAlignment="Right" VerticalAlignment="Top">
@@ -133,6 +136,7 @@
       <Button Content="-" Width="28" Command="{Binding ZoomOutCommand}"/>
       <Button Content="+" Width="28" Command="{Binding ZoomInCommand}"/>
       <Button Content="100%" Command="{Binding ZoomResetCommand}"/>
+  <Button Content="Reset" Command="{Binding ResetViewCommand}"/>
       <Button Content="⟲" Width="28" Command="{Binding RotateLeftCommand}"/>
       <Button Content="⟳" Width="28" Command="{Binding RotateRightCommand}"/>
       <Button Content="↑" Width="28" Command="{Binding RotateUpCommand}"/>

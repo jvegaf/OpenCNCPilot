@@ -91,8 +91,32 @@ public partial class GCodeViewport : OpenGlControlBase
     private Point? _lastPointer;
     private bool _isRotating;
     private bool _isPanning;
-    private const double RotateSensitivity = 0.3; // degrees per pixel
-    private const double PanSensitivity = 0.02;   // world units per pixel
+    public static readonly StyledProperty<double> RotateSensitivityProperty =
+        AvaloniaProperty.Register<GCodeViewport, double>(nameof(RotateSensitivity), 0.3);
+
+    public static readonly StyledProperty<double> PanSensitivityProperty =
+        AvaloniaProperty.Register<GCodeViewport, double>(nameof(PanSensitivity), 0.02);
+
+    public static readonly StyledProperty<double> ZoomStepFactorProperty =
+        AvaloniaProperty.Register<GCodeViewport, double>(nameof(ZoomStepFactor), 1.1);
+
+    public double RotateSensitivity
+    {
+        get => GetValue(RotateSensitivityProperty);
+        set => SetValue(RotateSensitivityProperty, value);
+    }
+
+    public double PanSensitivity
+    {
+        get => GetValue(PanSensitivityProperty);
+        set => SetValue(PanSensitivityProperty, value);
+    }
+
+    public double ZoomStepFactor
+    {
+        get => GetValue(ZoomStepFactorProperty);
+        set => SetValue(ZoomStepFactorProperty, value);
+    }
 
     private void AutoFit()
     {
@@ -129,6 +153,22 @@ public partial class GCodeViewport : OpenGlControlBase
         double scaleX = spanX / (w / 2) * margin;
         double scaleY = spanY / (h / 2) * margin;
         Zoom = Math.Max(scaleX, scaleY);
+
+        // Center the pan on the bounds midpoint in view space
+        double midX = (minX + maxX) / 2.0;
+        double midY = (minY + maxY) / 2.0;
+        // Transform with current rotations (Z=0) to view coordinates and set pan to align center
+        var (vx, vy) = ViewportMath.TransformWorldToView(midX, midY, 0, RotationX, RotationY, 0, 0);
+        // We want the screen center (0,0 in view coords) to map to the midpoint, so pan equals that view coord
+        PanX = vx;
+        PanY = vy;
+
+        // Center pan to content centroid in view space
+        var cx = (minX + maxX) / 2.0;
+        var cy = (minY + maxY) / 2.0;
+        // Since we draw at screen center (hw, hh), set pan so that world center maps to origin
+        PanX = -cx;
+        PanY = -cy;
     }
 
     protected override void OnOpenGlInit(GlInterface gl)
@@ -195,7 +235,7 @@ public partial class GCodeViewport : OpenGlControlBase
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
-        Zoom = ViewportInteractionLogic.ApplyWheelZoom(Zoom, e.Delta.Y * 120); // normalize to 120-steps
+        Zoom = ViewportInteractionLogic.ApplyWheelZoom(Zoom, e.Delta.Y * 120, ZoomStepFactor); // normalize to 120-steps
     }
 
     protected override void OnOpenGlDeinit(GlInterface gl)
@@ -300,7 +340,10 @@ public partial class GCodeViewport : OpenGlControlBase
             change.Property == RotationYProperty ||
             change.Property == FitRequestIdProperty ||
             change.Property == PanXProperty ||
-            change.Property == PanYProperty)
+            change.Property == PanYProperty ||
+            change.Property == RotateSensitivityProperty ||
+            change.Property == PanSensitivityProperty ||
+            change.Property == ZoomStepFactorProperty)
         {
             if (change.Property == CommandsProperty || change.Property == FitRequestIdProperty)
                 AutoFit();

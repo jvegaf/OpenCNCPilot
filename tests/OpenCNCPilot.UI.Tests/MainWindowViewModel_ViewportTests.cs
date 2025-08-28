@@ -71,4 +71,25 @@ public class MainWindowViewModel_ViewportTests
         vm.FitToViewCommand.Execute().Subscribe();
         Assert.Equal(before + 1, vm.FitRequestId);
     }
+
+    [Fact]
+    public void ResetViewCommand_Resets_Viewer_Properties()
+    {
+        var vm = new MainWindowViewModel(new NullLogger<MainWindowViewModel>(), new DummySerial(), new DummyDialogs(), new InMemorySettings(), new GCodeParser());
+
+        // Mutate properties away from defaults
+        vm.ViewerZoom = 3.14;
+        vm.ViewerRotationX = -20;
+        vm.ViewerRotationY = 123;
+        vm.ViewerPanX = 42;
+        vm.ViewerPanY = -17;
+
+        vm.ResetViewCommand.Execute().Subscribe();
+
+        Assert.Equal(1.0, vm.ViewerZoom, 6);
+        Assert.Equal(30.0, vm.ViewerRotationX, 6);
+        Assert.Equal(45.0, vm.ViewerRotationY, 6);
+        Assert.Equal(0.0, vm.ViewerPanX, 6);
+        Assert.Equal(0.0, vm.ViewerPanY, 6);
+    }
 }

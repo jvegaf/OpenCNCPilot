@@ -11,6 +11,17 @@ public class SettingsWindowViewModel : ReactiveObject
     private string defaultComPort = string.Empty;
     private int baudRate = 115200;
     private string lastGCodeDirectory = string.Empty;
+    private double viewerRotateSensitivity = 0.3;
+    private double viewerPanSensitivity = 0.02;
+    private double viewerZoomStepFactor = 1.1;
+
+    // Rangos recomendados
+    private const double MinRotateSens = 0.05;
+    private const double MaxRotateSens = 2.0;
+    private const double MinPanSens = 0.001;
+    private const double MaxPanSens = 1.0;
+    private const double MinZoomStep = 1.01;
+    private const double MaxZoomStep = 1.5;
 
     public SettingsWindowViewModel(ISettingsService settingsService)
     {
@@ -38,6 +49,24 @@ public class SettingsWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref lastGCodeDirectory, value);
     }
 
+    public double ViewerRotateSensitivity
+    {
+        get => viewerRotateSensitivity;
+        set => this.RaiseAndSetIfChanged(ref viewerRotateSensitivity, Math.Clamp(value, MinRotateSens, MaxRotateSens));
+    }
+
+    public double ViewerPanSensitivity
+    {
+        get => viewerPanSensitivity;
+        set => this.RaiseAndSetIfChanged(ref viewerPanSensitivity, Math.Clamp(value, MinPanSens, MaxPanSens));
+    }
+
+    public double ViewerZoomStepFactor
+    {
+        get => viewerZoomStepFactor;
+        set => this.RaiseAndSetIfChanged(ref viewerZoomStepFactor, Math.Clamp(value, MinZoomStep, MaxZoomStep));
+    }
+
     public ReactiveCommand<Unit, Unit> SaveCommand { get; }
     public ReactiveCommand<Unit, Unit> CancelCommand { get; }
 
@@ -49,7 +78,10 @@ public class SettingsWindowViewModel : ReactiveObject
         {
             DefaultComPort = DefaultComPort,
             BaudRate = BaudRate,
-            LastGCodeDirectory = LastGCodeDirectory
+            LastGCodeDirectory = LastGCodeDirectory,
+            ViewerRotateSensitivity = ViewerRotateSensitivity,
+            ViewerPanSensitivity = ViewerPanSensitivity,
+            ViewerZoomStepFactor = ViewerZoomStepFactor
         };
         await settingsService.SaveAsync(s);
         CloseRequested?.Invoke(this, true);
@@ -66,5 +98,8 @@ public class SettingsWindowViewModel : ReactiveObject
         DefaultComPort = s.DefaultComPort;
         BaudRate = s.BaudRate;
         LastGCodeDirectory = s.LastGCodeDirectory;
+        ViewerRotateSensitivity = s.ViewerRotateSensitivity;
+        ViewerPanSensitivity = s.ViewerPanSensitivity;
+        ViewerZoomStepFactor = s.ViewerZoomStepFactor;
     }
 }
