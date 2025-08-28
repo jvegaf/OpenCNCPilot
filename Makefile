@@ -11,7 +11,7 @@ PUBLISH_DIR ?= publish/$(RID)
 DOTNET ?= dotnet
 
 # Phony targets
-.PHONY: help restore build test coverage format clean run run-ui watch watch-nohot publish publish-all package ci chatmodes-sync
+.PHONY: help restore build test coverage format clean run run-ui watch watch-nohot publish publish-all package ci doctor chatmodes-sync
 
 help:
 	@echo "Targets disponibles:"
@@ -29,6 +29,7 @@ help:
 	@echo "  publish-all   - Publica UI para todos los RIDs: $(RIDS)"
 	@echo "  package       - Empaqueta artefacto de $(RID) (zip/tar.gz)"
 	@echo "  ci            - Formatea, compila y testea (pipeline local)"
+	@echo "  doctor        - Diagnóstico de SDK/runtimes .NET y ASP.NET Core (para watch)"
 	@echo "  chatmodes-sync - Descarga/actualiza chatmodes desde awesome-copilot"
 	@echo "Variables: SLN, UI_PROJECT, CONFIG, RID, RIDS"
 
@@ -88,3 +89,33 @@ ci: format build test
 
 chatmodes-sync: ## Descarga/actualiza chatmodes desde awesome-copilot
 	sh ./scripts/sync-chatmodes.sh
+
+doctor:
+	@set -e; \
+	echo "==> Diagnóstico de entorno .NET"; \
+	if ! command -v $(DOTNET) >/dev/null 2>&1; then \
+		echo "[ERROR] 'dotnet' no encontrado en PATH. Instala .NET SDK 8.0."; \
+		echo "Guía: https://learn.microsoft.com/dotnet/core/install/"; \
+		exit 1; \
+	fi; \
+	echo "-- dotnet --info --"; $(DOTNET) --info | sed -n '1,20p' || true; \
+	echo "-- SDKs instalados --"; $(DOTNET) --list-sdks || true; \
+	echo "-- Runtimes instalados --"; $(DOTNET) --list-runtimes || true; \
+	if ! $(DOTNET) --list-runtimes | grep -E '^Microsoft\\.AspNetCore\\.App\\s+8\\.' >/dev/null; then \
+		echo "[WARN] Falta el runtime 'Microsoft.AspNetCore.App 8.x' (requerido por dotnet watch Hot Reload)."; \
+		if [ -f /etc/os-release ]; then \
+			. /etc/os-release; \
+			case "$$ID" in \
+				arch|manjaro|endeavouros) echo "Sugerencia (Arch): sudo pacman -S aspnet-runtime dotnet-runtime";; \
+				ubuntu|debian) echo "Sugerencia (Debian/Ubuntu): sudo apt-get update && sudo apt-get install aspnetcore-runtime-8.0";; \
+				fedora) echo "Sugerencia (Fedora): sudo dnf install aspnetcore-runtime-8.0";; \
+				opensuse*|sles) echo "Sugerencia (openSUSE/SLES): sudo zypper install aspnetcore-runtime-8.0";; \
+				*) echo "Consulta tu distro: https://learn.microsoft.com/dotnet/core/install/linux";; \
+			esac; \
+		else \
+			echo "Consulta instalación Linux: https://learn.microsoft.com/dotnet/core/install/linux"; \
+		fi; \
+		echo "Alternativa inmediata: 'make watch-nohot' para ver cambios sin Hot Reload."; \
+	else \
+		echo "[OK] Runtime ASP.NET Core 8.x encontrado. 'make watch' debería funcionar."; \
+	fi
