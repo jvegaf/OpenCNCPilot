@@ -4,10 +4,15 @@ on:
   push:
     tags: [ 'v*' ]
 
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   publish:
-    permissions:
-      contents: write
     strategy:
       matrix:
         include:
@@ -25,6 +30,14 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '**/*.sln') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -45,23 +58,18 @@ jobs:
       - name: Archive (zip)
         if: matrix.os == 'windows-latest'
         run: |
-          Compress-Archive -Path ./publish/${{ matrix.rid }}/* -DestinationPath ${{ matrix.artifact }}.zip
+          Compress-Archive -Path ./publish/${{ matrix.rid }}/* -DestinationPath "${{ matrix.artifact }}-${{ github.ref_name }}.zip"
         shell: pwsh
 
       - name: Archive (tar.gz)
         if: matrix.os != 'windows-latest'
-        run: tar -czf ${{ matrix.artifact }}.tar.gz -C ./publish/${{ matrix.rid }} .
+        run: |
+          tar -czf "${{ matrix.artifact }}-${{ github.ref_name }}.tar.gz" -C ./publish/${{ matrix.rid }} .
 
-      - name: Upload Windows artifact
-        if: matrix.os == 'windows-latest'
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ matrix.artifact }}.zip
-          generate_release_notes: true
-
-      - name: Upload Linux artifact
-        if: matrix.os != 'windows-latest'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ${{ matrix.artifact }}.tar.gz
+          files: |
+            ${{ matrix.artifact }}-${{ github.ref_name }}.zip
+            ${{ matrix.artifact }}-${{ github.ref_name }}.tar.gz
           generate_release_notes: true

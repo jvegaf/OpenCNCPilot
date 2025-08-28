@@ -1,0 +1,25 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:OpenCNCPilot.UI.ViewModels"
+        x:Class="OpenCNCPilot.UI.Views.EditMacroItemWindow"
+        x:DataType="vm:EditMacroItemViewModel"
+        Title="Edit Macro Item"
+        Width="360" Height="320"
+        WindowStartupLocation="CenterOwner">
+  <Design.DataContext>
+    <vm:EditMacroItemViewModel/>
+  </Design.DataContext>
+  <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="Auto,*" Margin="12">
+    <TextBlock Text="Name:" VerticalAlignment="Center"/>
+    <TextBox Grid.Column="1" Margin="8,0,0,8" Text="{Binding MacroName, Mode=TwoWay}"/>
+
+    <CheckBox Grid.Row="1" Content="Use Expressions" IsChecked="{Binding UseMacros, Mode=TwoWay}"/>
+    <TextBox Grid.Row="1" Grid.Column="1" Margin="8,0,0,8" AcceptsReturn="True" TextWrapping="Wrap"
+             Text="{Binding Commands, Mode=TwoWay}"/>
+
+    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Cancel" Command="{Binding CancelCommand}" MinWidth="80"/>
+      <Button Content="OK" Command="{Binding OkCommand}" MinWidth="80"/>
+    </StackPanel>
+  </Grid>
+</Window>

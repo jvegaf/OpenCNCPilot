@@ -12,6 +12,7 @@ using Xunit;
 
 namespace OpenCNCPilot.UI.Tests;
 
+[Trait("Category","UI-VM")]
 public class MainWindowViewModel_ViewerZoomTests
 {
     private sealed class DummySerial : ISerialPortService

@@ -56,8 +56,11 @@
           </StackPanel>
         </StackPanel>
 
-        <!-- Settings Button -->
-        <Button Grid.Column="3" Content="Settings" Command="{Binding OpenSettingsCommand}" Margin="10,0"/>
+        <!-- Settings Buttons -->
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8">
+          <Button Content="Settings" Command="{Binding OpenSettingsCommand}"/>
+          <Button Content="GRBL Settings" Command="{Binding OpenGrblSettingsCommand}"/>
+        </StackPanel>
 
         <!-- Connection Indicator -->
         <Border Grid.Column="4" Width="12" Height="12" CornerRadius="6" Margin="10,0">
@@ -116,9 +119,13 @@
       BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
       BorderThickness="1" CornerRadius="5">
   <Grid>
-    <controls:GCodeViewport Commands="{Binding GCodeCommands}"
-                             Zoom="{Binding ViewerZoom}"
-                             FitRequestId="{Binding FitRequestId}" />
+  <controls:GCodeViewport Commands="{Binding GCodeCommands}"
+               Zoom="{Binding ViewerZoom}"
+               RotationX="{Binding ViewerRotationX}"
+               RotationY="{Binding ViewerRotationY}"
+               PanX="{Binding ViewerPanX}"
+               PanY="{Binding ViewerPanY}"
+               FitRequestId="{Binding FitRequestId}" />
     <!-- Overlay zoom toolbar -->
     <StackPanel Orientation="Horizontal" Spacing="6" Margin="10"
                 HorizontalAlignment="Right" VerticalAlignment="Top">
@@ -126,6 +133,14 @@
       <Button Content="-" Width="28" Command="{Binding ZoomOutCommand}"/>
       <Button Content="+" Width="28" Command="{Binding ZoomInCommand}"/>
       <Button Content="100%" Command="{Binding ZoomResetCommand}"/>
+      <Button Content="⟲" Width="28" Command="{Binding RotateLeftCommand}"/>
+      <Button Content="⟳" Width="28" Command="{Binding RotateRightCommand}"/>
+      <Button Content="↑" Width="28" Command="{Binding RotateUpCommand}"/>
+      <Button Content="↓" Width="28" Command="{Binding RotateDownCommand}"/>
+      <Button Content="←" Width="28" Command="{Binding PanLeftCommand}"/>
+      <Button Content="→" Width="28" Command="{Binding PanRightCommand}"/>
+      <Button Content="⇑" Width="28" Command="{Binding PanUpCommand}"/>
+      <Button Content="⇓" Width="28" Command="{Binding PanDownCommand}"/>
     </StackPanel>
   </Grid>
       </Border>

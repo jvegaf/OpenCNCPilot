@@ -73,7 +73,10 @@ public partial class App : Application
         // ViewModels
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<ViewModels.SettingsWindowViewModel>();
+    services.AddTransient<ViewModels.GrblSettingsViewModel>();
+    services.AddTransient<ViewModels.EditMacroItemViewModel>();
     }
 
-    public static IServiceProvider? Services => ((App)Current!)._serviceProvider;
+    public static IServiceProvider? Services
+        => Current is App app ? app._serviceProvider : null;
 }

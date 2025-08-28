@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.OpenGL;
 using Avalonia.OpenGL.Controls;
+using Avalonia.Input;
 using Avalonia.Threading;
 using OpenCNCPilot.Core.GCode.GCodeCommands;
 using SkiaSharp;
@@ -26,6 +27,12 @@ public partial class GCodeViewport : OpenGlControlBase
     public static readonly StyledProperty<double> RotationYProperty =
         AvaloniaProperty.Register<GCodeViewport, double>(nameof(RotationY), 45.0);
 
+    public static readonly StyledProperty<double> PanXProperty =
+        AvaloniaProperty.Register<GCodeViewport, double>(nameof(PanX), 0.0);
+
+    public static readonly StyledProperty<double> PanYProperty =
+        AvaloniaProperty.Register<GCodeViewport, double>(nameof(PanY), 0.0);
+
     public double Zoom
     {
         get => GetValue(ZoomProperty);
@@ -42,6 +49,18 @@ public partial class GCodeViewport : OpenGlControlBase
     {
         get => GetValue(RotationYProperty);
         set => SetValue(RotationYProperty, value);
+    }
+
+    public double PanX
+    {
+        get => GetValue(PanXProperty);
+        set => SetValue(PanXProperty, value);
+    }
+
+    public double PanY
+    {
+        get => GetValue(PanYProperty);
+        set => SetValue(PanYProperty, value);
     }
 
     /// <summary>
@@ -68,6 +87,12 @@ public partial class GCodeViewport : OpenGlControlBase
         get => GetValue(FitRequestIdProperty);
         set => SetValue(FitRequestIdProperty, value);
     }
+
+    private Point? _lastPointer;
+    private bool _isRotating;
+    private bool _isPanning;
+    private const double RotateSensitivity = 0.3; // degrees per pixel
+    private const double PanSensitivity = 0.02;   // world units per pixel
 
     private void AutoFit()
     {
@@ -119,6 +144,58 @@ public partial class GCodeViewport : OpenGlControlBase
         {
             // In headless/CI environments, GL might be unavailable
         }
+    }
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        _lastPointer = e.GetPosition(this);
+        var properties = e.GetCurrentPoint(this).Properties;
+        var mods = e.KeyModifiers;
+        _isRotating = properties.IsRightButtonPressed || mods.HasFlag(KeyModifiers.Alt);
+        _isPanning = properties.IsMiddleButtonPressed || mods.HasFlag(KeyModifiers.Shift);
+        e.Pointer.Capture(this);
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+        _isRotating = false;
+        _isPanning = false;
+        _lastPointer = null;
+        e.Pointer.Capture(null);
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        if (_lastPointer is null)
+            return;
+
+        var pos = e.GetPosition(this);
+        var dx = pos.X - _lastPointer.Value.X;
+        var dy = pos.Y - _lastPointer.Value.Y;
+
+        if (_isRotating)
+        {
+            var (rx, ry) = ViewportInteractionLogic.ApplyRotation(RotationX, RotationY, dx, dy, RotateSensitivity);
+            RotationX = rx;
+            RotationY = ry;
+        }
+        else if (_isPanning)
+        {
+            var (px, py) = ViewportInteractionLogic.ApplyPan(PanX, PanY, dx, dy, PanSensitivity * Zoom);
+            PanX = px;
+            PanY = py;
+        }
+
+        _lastPointer = pos;
+    }
+
+    protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
+    {
+        base.OnPointerWheelChanged(e);
+        Zoom = ViewportInteractionLogic.ApplyWheelZoom(Zoom, e.Delta.Y * 120); // normalize to 120-steps
     }
 
     protected override void OnOpenGlDeinit(GlInterface gl)
@@ -173,10 +250,12 @@ public partial class GCodeViewport : OpenGlControlBase
                 {
                     if (cmd is Line line)
                     {
-                        float sx1 = hw + (float)(line.Start.X / scale);
-                        float sy1 = hh - (float)(line.Start.Y / scale);
-                        float sx2 = hw + (float)(line.End.X / scale);
-                        float sy2 = hh - (float)(line.End.Y / scale);
+                        var (vx1, vy1) = ViewportMath.TransformWorldToView(line.Start.X, line.Start.Y, line.Start.Z, RotationX, RotationY, PanX, PanY);
+                        var (vx2, vy2) = ViewportMath.TransformWorldToView(line.End.X, line.End.Y, line.End.Z, RotationX, RotationY, PanX, PanY);
+                        float sx1 = hw + (float)(vx1 / scale);
+                        float sy1 = hh - (float)(vy1 / scale);
+                        float sx2 = hw + (float)(vx2 / scale);
+                        float sy2 = hh - (float)(vy2 / scale);
                         canvas.DrawLine(sx1, sy1, sx2, sy2, pathPaint);
                     }
                     else if (cmd is Arc arc)
@@ -188,10 +267,12 @@ public partial class GCodeViewport : OpenGlControlBase
                         {
                             double t = (double)i / segments;
                             var cur = arc.Interpolate(t);
-                            float sx1 = hw + (float)(prev.X / scale);
-                            float sy1 = hh - (float)(prev.Y / scale);
-                            float sx2 = hw + (float)(cur.X / scale);
-                            float sy2 = hh - (float)(cur.Y / scale);
+                            var (vx1, vy1) = ViewportMath.TransformWorldToView(prev.X, prev.Y, prev.Z, RotationX, RotationY, PanX, PanY);
+                            var (vx2, vy2) = ViewportMath.TransformWorldToView(cur.X, cur.Y, cur.Z, RotationX, RotationY, PanX, PanY);
+                            float sx1 = hw + (float)(vx1 / scale);
+                            float sy1 = hh - (float)(vy1 / scale);
+                            float sx2 = hw + (float)(vx2 / scale);
+                            float sy2 = hh - (float)(vy2 / scale);
                             canvas.DrawLine(sx1, sy1, sx2, sy2, pathPaint);
                             prev = cur;
                         }
@@ -217,7 +298,9 @@ public partial class GCodeViewport : OpenGlControlBase
             change.Property == ZoomProperty ||
             change.Property == RotationXProperty ||
             change.Property == RotationYProperty ||
-            change.Property == FitRequestIdProperty)
+            change.Property == FitRequestIdProperty ||
+            change.Property == PanXProperty ||
+            change.Property == PanYProperty)
         {
             if (change.Property == CommandsProperty || change.Property == FitRequestIdProperty)
                 AutoFit();

@@ -35,15 +35,16 @@ Integración en UI (avance)
 ## Fase 3: Migración de UI (3-4 semanas)
 - [x] Migrar ventana principal
 - [ ] Adaptar controles custom
-- [ ] Migrar diálogos y ventanas secundarias
+- [x] Migrar diálogos y ventanas secundarias
     - [x] SettingsWindow → Avalonia
-    - [ ] GrblSettingsWindow → Avalonia
-    - [ ] EditMacroItemWindow → Avalonia
+    - [x] GrblSettingsWindow → Avalonia
+    - [x] EditMacroItemWindow → Avalonia
     - [x] EnterNumberWindow → Avalonia
     - [x] WarningWindow → Avalonia
+    - [x] Wiring en `MainWindowViewModel` del diálogo de GRBL Settings + integración con `ISerialPortService`
 - [ ] Implementar visualización 3D (OpenGL)
  - [x] PoC visor OpenGL/Skia (ejes básicos, AutoFit, zoom/fit)
- - [ ] Rotación interactiva y pan con ratón
+ - [x] Rotación y pan (propiedades/commands MVVM) e interacción con ratón (drag/wheel)
 
 ## Fase 4: Testing y Estabilización (2 semanas)
 - [ ] Pruebas en Windows
@@ -56,8 +57,20 @@ Integración en UI (avance)
 - [x] CI: build y test en matriz (ubuntu-latest, windows-latest)
 - [x] CI: cobertura con Codecov en Linux
 - [x] Release: workflow `release.yml` por tags `v*`
-- [ ] Release: publicar artefactos self-contained single-file por SO
-- [ ] Release: notas con changelog automático
+- [x] Release: publicar artefactos self-contained single-file por SO
+- [x] Release: notas con changelog automático
+
+Avances implementados (TDD Phase 3)
+- Tests UI: `ViewportMathTests` valida transformaciones (rotación X/Y y pan) y `MainWindowViewModel_ViewportTests` cubre comandos de zoom/fit.
+- Nuevo helper `ViewportMath` encapsula la proyección ortográfica con rotaciones X/Y y pan.
+- `GCodeViewport` integra rotación/pan (StyledProperties `RotationX`, `RotationY`, `PanX`, `PanY`) aplicadas en render Skia.
+- `MainWindowViewModel` expone propiedades `ViewerRotationX/Y`, `ViewerPanX/Y` y comandos `Rotate*/Pan*`; `MainWindow.axaml` agrega bindings y botones de control.
+- Tests ejecutan verde en Linux; CI filtra `Category!=RequiresHardware` para evitar dependencias de hardware/GL.
+
+- Tests UI (GRBL Settings): `MainWindowViewModel_GrblSettingsTests`
+    - Verifica que `OpenGrblSettingsCommand` envía `$$` al estar conectado y abre el diálogo.
+    - Simula `DataReceived` con líneas `$n=value` y valida que `GrblSettingsViewModel.Items` se puebla y actualiza (`$0=10`, `$1=255`, `$10=3`).
+- Endurecido `App.Services` para tests headless: propiedad null-safe para evitar NRE cuando no hay `Application.Current` en pruebas.
 
 3. Estructura de Testing Propuesta
 
@@ -93,6 +106,10 @@ OpenCNCPilot/
      - Invoca parser de Core con `IgnoreAdditionalAxes` desde settings; muestra warnings generados por Core mediante `ShowWarningsAsync`.
  - Viewer: `GCodeCommands` se exponen en el VM y se enlazan al viewport; `AutoFit()` al cambiar `Commands`; toolbar flotante con `Fit/+/−/100%` enlazada a comandos del VM; propiedades `Zoom` y `FitRequestId` enlazadas.
  - Build Release de `OpenCNCPilot.UI` exitoso en Linux tras las correcciones.
+
+Release y Changelog
+- Publicación self-contained single-file activada en `release.yml` usando `-p:PublishSingleFile=true` y `-p:IncludeNativeLibrariesForSelfExtract=true`, con empaquetado `.zip` (Windows) y `.tar.gz` (Linux) por RID.
+- Notas de release automatizadas: `softprops/action-gh-release@v2` recoge assets y genera notas a partir de commits/prs (`generate_release_notes: true`), permitiendo changelog automático por tag `v*`.
 
 ### Gotchas (OpenGL/Skia en Linux y CI)
 - En runners headless puede no haber contexto GL; el control captura excepciones en init/render para no crashear.

@@ -11,17 +11,17 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        
+
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
-      
+
     - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-        
+
     - name: Cache NuGet packages
       uses: actions/cache@v3
       with:
@@ -42,8 +42,11 @@ jobs:
     - name: Build solution
       run: dotnet build OpenCNCPilot.Modern.sln -c Release --no-restore
 
-    - name: Run tests
-      run: dotnet test OpenCNCPilot.Modern.sln -c Release --no-build --logger trx --results-directory "TestResults-${{ matrix.os }}"
+    - name: Run tests (exclude hardware)
+      run: >
+        dotnet test OpenCNCPilot.Modern.sln -c Release --no-build \
+        --logger trx --results-directory "TestResults-${{ matrix.os }}" \
+        --filter "Category!=RequiresHardware"
 
     - name: Upload test results
       uses: actions/upload-artifact@v3
@@ -54,31 +57,43 @@ jobs:
 
   code-analysis:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-        
+
     - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-        
+
     - name: Install Linux dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y libx11-dev libgl1-mesa-glx libfontconfig1-dev
-        
+
     - name: Restore dependencies
       run: dotnet restore OpenCNCPilot.Modern.sln
-      
+
     - name: Build solution
       run: dotnet build OpenCNCPilot.Modern.sln -c Release --no-restore
-      
-    - name: Run tests with coverage
-      run: dotnet test OpenCNCPilot.Modern.sln -c Release --no-build --collect:"XPlat Code Coverage" --results-directory ./coverage
-      
+
+    - name: Run tests with coverage (exclude hardware)
+      run: >
+        dotnet test OpenCNCPilot.Modern.sln -c Release --no-build \
+        --collect:"XPlat Code Coverage" --results-directory ./coverage \
+        --filter "Category!=RequiresHardware"
+
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-results
+        path: |
+          coverage/**/coverage.cobertura.xml
+          coverage/**/*.xml
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:

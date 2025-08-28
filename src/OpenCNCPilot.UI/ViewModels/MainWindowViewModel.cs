@@ -34,6 +34,10 @@ public class MainWindowViewModel : ReactiveObject
     private Vector3 _workPosition = Vector3.Origin;
     private double _viewerZoom = 1.0;
     private int _fitRequestId = 0;
+    private double _viewerRotationX = 30.0;
+    private double _viewerRotationY = 45.0;
+    private double _viewerPanX = 0.0;
+    private double _viewerPanY = 0.0;
 
     public MainWindowViewModel(ILogger<MainWindowViewModel> logger, ISerialPortService serialPortService, IDialogService dialogService, ISettingsService settingsService, IGCodeParser gcodeParser)
     {
@@ -64,11 +68,53 @@ public class MainWindowViewModel : ReactiveObject
             _logger.LogInformation("Settings dialog closed with result: {Result}", result);
         });
 
+        OpenGrblSettingsCommand = ReactiveCommand.CreateFromTask(async () =>
+        {
+            var gvm = (GrblSettingsViewModel?)App.Services?.GetService(typeof(GrblSettingsViewModel))
+                      ?? new GrblSettingsViewModel(_dialogService);
+
+            Action<string> sendHandler = s => _serialPortService.WriteLine(s);
+            gvm.SendLine += sendHandler;
+
+            EventHandler<string>? recvHandler = null;
+            recvHandler = (_, data) =>
+            {
+                if (string.IsNullOrEmpty(data)) return;
+                var lines = data.Split(Core.Constants.NewLines, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var line in lines)
+                {
+                    var t = line.Trim();
+                    if (t.StartsWith("$")) gvm.LineReceived(t);
+                }
+            };
+            _serialPortService.DataReceived += recvHandler;
+
+            try
+            {
+                if (_serialPortService.IsOpen)
+                    _serialPortService.WriteLine("$$");
+                await ShowGrblSettings.Handle(gvm);
+            }
+            finally
+            {
+                _serialPortService.DataReceived -= recvHandler;
+                gvm.SendLine -= sendHandler;
+            }
+        });
+
         // Viewer controls
         FitToViewCommand = ReactiveCommand.Create(() => { FitRequestId++; });
         ZoomInCommand = ReactiveCommand.Create(() => { ViewerZoom = Math.Max(1e-6, ViewerZoom * 0.8); });
         ZoomOutCommand = ReactiveCommand.Create(() => { ViewerZoom = Math.Max(1e-6, ViewerZoom / 0.8); });
         ZoomResetCommand = ReactiveCommand.Create(() => { ViewerZoom = 1.0; });
+    RotateLeftCommand = ReactiveCommand.Create(() => { ViewerRotationY -= 5.0; });
+    RotateRightCommand = ReactiveCommand.Create(() => { ViewerRotationY += 5.0; });
+    RotateUpCommand = ReactiveCommand.Create(() => { ViewerRotationX = Math.Clamp(ViewerRotationX - 5.0, -89.0, 89.0); });
+    RotateDownCommand = ReactiveCommand.Create(() => { ViewerRotationX = Math.Clamp(ViewerRotationX + 5.0, -89.0, 89.0); });
+    PanLeftCommand = ReactiveCommand.Create(() => { ViewerPanX -= 5.0; });
+    PanRightCommand = ReactiveCommand.Create(() => { ViewerPanX += 5.0; });
+    PanUpCommand = ReactiveCommand.Create(() => { ViewerPanY += 5.0; });
+    PanDownCommand = ReactiveCommand.Create(() => { ViewerPanY -= 5.0; });
 
         // Add demo warnings command for manual verification
         DemoWarningsCommand = ReactiveCommand.CreateFromTask(async () =>
@@ -196,6 +242,30 @@ public class MainWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref _fitRequestId, value);
     }
 
+    public double ViewerRotationX
+    {
+        get => _viewerRotationX;
+        set => this.RaiseAndSetIfChanged(ref _viewerRotationX, value);
+    }
+
+    public double ViewerRotationY
+    {
+        get => _viewerRotationY;
+        set => this.RaiseAndSetIfChanged(ref _viewerRotationY, value);
+    }
+
+    public double ViewerPanX
+    {
+        get => _viewerPanX;
+        set => this.RaiseAndSetIfChanged(ref _viewerPanX, value);
+    }
+
+    public double ViewerPanY
+    {
+        get => _viewerPanY;
+        set => this.RaiseAndSetIfChanged(ref _viewerPanY, value);
+    }
+
     #endregion
 
     #region Commands
@@ -205,13 +275,23 @@ public class MainWindowViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> RefreshPortsCommand { get; }
     public ReactiveCommand<Unit, Unit> OpenSettingsCommand { get; }
     public ReactiveCommand<Unit, Unit> DemoWarningsCommand { get; }
+    public ReactiveCommand<Unit, Unit> OpenGrblSettingsCommand { get; }
     public ReactiveCommand<Unit, Unit> LoadGCodeFileCommand { get; }
     public ReactiveCommand<Unit, Unit> FitToViewCommand { get; }
     public ReactiveCommand<Unit, Unit> ZoomInCommand { get; }
     public ReactiveCommand<Unit, Unit> ZoomOutCommand { get; }
     public ReactiveCommand<Unit, Unit> ZoomResetCommand { get; }
+    public ReactiveCommand<Unit, Unit> RotateLeftCommand { get; }
+    public ReactiveCommand<Unit, Unit> RotateRightCommand { get; }
+    public ReactiveCommand<Unit, Unit> RotateUpCommand { get; }
+    public ReactiveCommand<Unit, Unit> RotateDownCommand { get; }
+    public ReactiveCommand<Unit, Unit> PanLeftCommand { get; }
+    public ReactiveCommand<Unit, Unit> PanRightCommand { get; }
+    public ReactiveCommand<Unit, Unit> PanUpCommand { get; }
+    public ReactiveCommand<Unit, Unit> PanDownCommand { get; }
 
     public Interaction<SettingsWindowViewModel, bool?> ShowSettings { get; } = new();
+    public Interaction<GrblSettingsViewModel, bool?> ShowGrblSettings { get; } = new();
 
     #endregion
 

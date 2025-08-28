@@ -25,6 +25,16 @@ public partial class MainWindow : Window
                 var result = await dlg.ShowDialog<bool?>(this);
                 interaction.SetOutput(result);
             });
+
+            vm.ShowGrblSettings.RegisterHandler(async interaction =>
+            {
+                var dlg = new GrblSettingsWindow
+                {
+                    DataContext = interaction.Input,
+                };
+                var result = await dlg.ShowDialog<bool?>(this);
+                interaction.SetOutput(result);
+            });
         }
     }
 }

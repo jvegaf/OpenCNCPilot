@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:vm="clr-namespace:OpenCNCPilot.UI.ViewModels"
+        x:Class="OpenCNCPilot.UI.Views.GrblSettingsWindow"
+        x:DataType="vm:GrblSettingsViewModel"
+        Title="GRBL Settings"
+        Width="520" Height="700"
+        WindowStartupLocation="CenterOwner">
+  <Design.DataContext>
+    <vm:GrblSettingsViewModel/>
+  </Design.DataContext>
+  <Grid RowDefinitions="*,Auto" Margin="8">
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Items}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:GrblSettingItem">
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,2">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock Text="$"/>
+                <TextBlock Text="{Binding Number}"/>
+                <TextBlock Text="="/>
+              </StackPanel>
+              <TextBox Grid.Column="1" Text="{Binding TextValue, Mode=TwoWay}" MinWidth="120"/>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="{Binding Name}"/>
+                <TextBlock Text="{Binding Unit}"/>
+              </StackPanel>
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,8,0,0">
+      <Button Content="Export" Command="{Binding ExportCommand}" MinWidth="80"/>
+      <Button Content="Import" Command="{Binding ImportCommand}" MinWidth="80"/>
+      <Button Content="Apply" Command="{Binding ApplyCommand}" MinWidth="80"/>
+    </StackPanel>
+  </Grid>
+</Window>
