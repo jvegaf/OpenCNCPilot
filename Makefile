@@ -11,7 +11,7 @@ PUBLISH_DIR ?= publish/$(RID)
 DOTNET ?= dotnet
 
 # Phony targets
-.PHONY: help restore build test coverage format clean run run-ui publish publish-all package ci chatmodes-sync
+.PHONY: help restore build test coverage format clean run run-ui watch watch-nohot publish publish-all package ci chatmodes-sync
 
 help:
 	@echo "Targets disponibles:"
@@ -23,6 +23,8 @@ help:
 	@echo "  clean         - Limpia build y carpeta publish"
 	@echo "  run           - Ejecuta la aplicación (alias de run-ui)"
 	@echo "  run-ui        - Ejecuta el proyecto UI en $(CONFIG)"
+	@echo "  watch         - Inicia dotnet watch run del UI (Hot Reload)"
+	@echo "  watch-nohot   - Inicia dotnet watch sin Hot Reload (fallback)"
 	@echo "  publish       - Publica UI self-contained single-file para $(RID)"
 	@echo "  publish-all   - Publica UI para todos los RIDs: $(RIDS)"
 	@echo "  package       - Empaqueta artefacto de $(RID) (zip/tar.gz)"
@@ -53,6 +55,12 @@ run-ui:
 	$(DOTNET) run -c $(CONFIG) --project $(UI_PROJECT)
 
 run: run-ui
+
+watch:
+	$(DOTNET) watch run -c $(CONFIG) --project $(UI_PROJECT)
+
+watch-nohot:
+	$(DOTNET) watch --no-hot-reload run -c $(CONFIG) --project $(UI_PROJECT)
 
 publish: build
 	$(DOTNET) publish $(UI_PROJECT) -c $(CONFIG) -r $(RID) \
