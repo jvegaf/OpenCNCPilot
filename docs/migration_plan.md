@@ -34,7 +34,7 @@ Integración en UI (avance)
 
 ## Fase 3: Migración de UI (3-4 semanas)
 - [x] Migrar ventana principal
-- [ ] Adaptar controles custom
+- [x] Adaptar controles custom
 - [x] Migrar diálogos y ventanas secundarias
     - [x] SettingsWindow → Avalonia
     - [x] GrblSettingsWindow → Avalonia
@@ -42,7 +42,7 @@ Integración en UI (avance)
     - [x] EnterNumberWindow → Avalonia
     - [x] WarningWindow → Avalonia
     - [x] Wiring en `MainWindowViewModel` del diálogo de GRBL Settings + integración con `ISerialPortService`
-- [ ] Implementar visualización 3D (OpenGL)
+ - [x] Implementar visualización 3D (OpenGL)
  - [x] PoC visor OpenGL/Skia (ejes básicos, AutoFit, zoom/fit)
  - [x] Rotación y pan (propiedades/commands MVVM) e interacción con ratón (drag/wheel)
  - [x] Reset del visor (comando y botón en toolbar)
@@ -50,6 +50,11 @@ Integración en UI (avance)
  - [x] AutoFit centra el encuadre ajustando `PanX/PanY` al punto medio de los bounds
  - [x] AutoFit validado por TDD: `ViewportAutoFitTests` y helper puro `ViewportAutoFit.Compute()`
  - [x] Refactor `GCodeViewport.AutoFit()` -> usa `ViewportAutoFit` y corrige pan inconsistente
+ - [x] Overlays del visor: Grid, Origin, Bounds con StyledProperties y render en Skia
+ - [x] Toolbar del visor: toggles Grid/Origin/Bounds, ajuste directo de tamaño de grilla
+ - [x] Atajos UX: botones "Snap to 2D" y "Fit + Reset"
+ - [x] Persistencia de overlays en Settings + pruebas de round-trip
+ - [x] Pruebas VM: comandos de visor (zoom/fit/reset/snap) y propiedades enlazadas
 
 ## Fase 4: Testing y Estabilización (2 semanas)
 - [ ] Pruebas en Windows
@@ -117,6 +122,7 @@ OpenCNCPilot/
      - Actualiza `LastGCodeDirectory` al seleccionar archivo (persistido en JSON).
      - Invoca parser de Core con `IgnoreAdditionalAxes` desde settings; muestra warnings generados por Core mediante `ShowWarningsAsync`.
  - Viewer: `GCodeCommands` se exponen en el VM y se enlazan al viewport; `AutoFit()` al cambiar `Commands`; toolbar flotante con `Fit/+/−/100%` enlazada a comandos del VM; propiedades `Zoom` y `FitRequestId` enlazadas.
+- Overlays del visor (Grid, Origin, Bounds) y dibujo de bounds; toolbar con toggles y campo de grilla; comandos adicionales Snap to 2D y Fit+Reset.
  - Build Release de `OpenCNCPilot.UI` exitoso en Linux tras las correcciones.
 
 Release y Changelog
