@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OpenCNCPilot.UI.ViewModels"
+        x:Class="OpenCNCPilot.UI.Views.SettingsWindow"
+        x:DataType="vm:SettingsWindowViewModel"
+        Title="Settings" Width="500" Height="350">
+
+  <Design.DataContext>
+    <vm:SettingsWindowViewModel/>
+  </Design.DataContext>
+
+  <Grid RowDefinitions="* , Auto" Margin="16">
+    <StackPanel Spacing="10">
+      <TextBlock Text="Serial Settings" FontWeight="Bold" FontSize="14"/>
+  <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Default COM Port:" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DefaultComPort}"/>
+
+  <TextBlock Grid.Row="1" Grid.Column="0" Text="Baud Rate:" VerticalAlignment="Center"/>
+  <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BaudRate}" Watermark="115200"/>
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Last GCode Directory:" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding LastGCodeDirectory}"/>
+      </Grid>
+    </StackPanel>
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+      <Button Content="Cancel" Command="{Binding CancelCommand}"/>
+      <Button Content="Save" Command="{Binding SaveCommand}"/>
+    </StackPanel>
+  </Grid>
+</Window>

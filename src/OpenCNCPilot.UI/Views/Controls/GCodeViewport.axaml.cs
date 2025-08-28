@@ -6,7 +6,7 @@ using Avalonia.Threading;
 
 namespace OpenCNCPilot.UI.Views.Controls;
 
-public class GCodeViewport : OpenGlControlBase
+public partial class GCodeViewport : OpenGlControlBase
 {
     public static readonly StyledProperty<double> ZoomProperty =
         AvaloniaProperty.Register<GCodeViewport, double>(nameof(Zoom), 1.0);
@@ -35,7 +35,7 @@ public class GCodeViewport : OpenGlControlBase
         set => SetValue(RotationYProperty, value);
     }
 
-    protected override void OnOpenGlInit(GlInterface gl, int fb)
+    protected override void OnOpenGlInit(GlInterface gl)
     {
         try
         {
@@ -47,7 +47,7 @@ public class GCodeViewport : OpenGlControlBase
         }
     }
 
-    protected override void OnOpenGlDeinit(GlInterface gl, int fb)
+    protected override void OnOpenGlDeinit(GlInterface gl)
     {
         // No resources yet
     }

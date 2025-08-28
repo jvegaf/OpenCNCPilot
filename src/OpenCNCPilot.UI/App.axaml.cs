@@ -3,11 +3,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using OpenCNCPilot.UI.ViewModels;
 using OpenCNCPilot.UI.Views;
 using OpenCNCPilot.Hardware.Services;
+using OpenCNCPilot.UI.Services;
 
 namespace OpenCNCPilot.UI;
 
@@ -27,7 +29,7 @@ public partial class App : Application
         ConfigureServices(serviceCollection);
         _serviceProvider = serviceCollection.BuildServiceProvider();
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Line below is needed to remove Avalonia data validation.
             // Without this line you will get duplicate validations from both Avalonia and CT
@@ -46,7 +48,7 @@ public partial class App : Application
     private void ConfigureServices(ServiceCollection services)
     {
         // Logging
-        services.AddLogging(builder => 
+        services.AddLogging(builder =>
         {
             builder.AddConsole();
             builder.SetMinimumLevel(LogLevel.Information);
@@ -55,8 +57,17 @@ public partial class App : Application
         // Hardware services
         services.AddSingleton<ISerialPortService, SerialPortService>();
 
+        // Dialogs
+        services.AddSingleton<IDialogService>(sp =>
+            new AvaloniaDialogService(() =>
+                (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow as Window));
+
+        // Settings
+        services.AddSingleton<ISettingsService, JsonSettingsService>();
+
         // ViewModels
         services.AddTransient<MainWindowViewModel>();
+        services.AddTransient<ViewModels.SettingsWindowViewModel>();
     }
 
     public static IServiceProvider? Services => ((App)Current!)._serviceProvider;

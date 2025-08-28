@@ -2,6 +2,7 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.ReactiveUI;
 
 namespace OpenCNCPilot.UI;
 
@@ -18,6 +19,7 @@ internal class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .UseReactiveUI()
             .WithInterFont()
             .LogToTrace();
 }

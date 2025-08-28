@@ -1,5 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<ava:OpenGlControlBase xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="OpenCNCPilot.UI.Views.Controls.GCodeViewport">
-  <!-- Placeholder: OpenGL rendering is handled in code-behind via OpenGlControlBase derivative -->
-</UserControl>
+             xmlns:ava="clr-namespace:Avalonia.OpenGL.Controls;assembly=Avalonia.OpenGL"
+             x:Class="OpenCNCPilot.UI.Views.Controls.GCodeViewport"/>

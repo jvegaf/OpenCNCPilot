@@ -1,10 +1,12 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Reactive;
+using System.Reactive.Linq;
 using ReactiveUI;
 using Microsoft.Extensions.Logging;
 using OpenCNCPilot.Hardware.Services;
 using OpenCNCPilot.Core.Geometry;
+using Avalonia.Threading;
 
 namespace OpenCNCPilot.UI.ViewModels;
 
@@ -15,7 +17,7 @@ public class MainWindowViewModel : ReactiveObject
 {
     private readonly ILogger<MainWindowViewModel> _logger;
     private readonly ISerialPortService _serialPortService;
-    
+
     private string _selectedPort = string.Empty;
     private string _status = "Disconnected";
     private bool _isConnected = false;
@@ -28,9 +30,26 @@ public class MainWindowViewModel : ReactiveObject
         _serialPortService = serialPortService ?? throw new ArgumentNullException(nameof(serialPortService));
 
         // Initialize commands
-        ConnectCommand = ReactiveCommand.Create(Connect, this.WhenAnyValue(x => x.CanConnect));
-        DisconnectCommand = ReactiveCommand.Create(Disconnect, this.WhenAnyValue(x => x.IsConnected));
+        var canConnectObs = this
+            .WhenAnyValue(x => x.SelectedPort, x => x.IsConnected,
+                (port, connected) => !connected && !string.IsNullOrEmpty(port))
+            .ObserveOn(RxApp.MainThreadScheduler);
+
+        ConnectCommand = ReactiveCommand.Create(Connect, canConnectObs, RxApp.MainThreadScheduler);
+
+        var canDisconnectObs = this
+            .WhenAnyValue(x => x.IsConnected)
+            .ObserveOn(RxApp.MainThreadScheduler);
+
+        DisconnectCommand = ReactiveCommand.Create(Disconnect, canDisconnectObs, RxApp.MainThreadScheduler);
         RefreshPortsCommand = ReactiveCommand.Create(RefreshPorts);
+        OpenSettingsCommand = ReactiveCommand.CreateFromTask(async () =>
+        {
+            var vm = (SettingsWindowViewModel?)App.Services?.GetService(typeof(SettingsWindowViewModel))
+                     ?? new SettingsWindowViewModel(new UI.Services.JsonSettingsService());
+            var result = await ShowSettings.Handle(vm);
+            _logger.LogInformation("Settings dialog closed with result: {Result}", result);
+        });
 
         // Subscribe to serial port events
         _serialPortService.ConnectionStateChanged += OnConnectionStateChanged;
@@ -87,6 +106,9 @@ public class MainWindowViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> ConnectCommand { get; }
     public ReactiveCommand<Unit, Unit> DisconnectCommand { get; }
     public ReactiveCommand<Unit, Unit> RefreshPortsCommand { get; }
+    public ReactiveCommand<Unit, Unit> OpenSettingsCommand { get; }
+
+    public Interaction<SettingsWindowViewModel, bool?> ShowSettings { get; } = new();
 
     #endregion
 
@@ -126,7 +148,7 @@ public class MainWindowViewModel : ReactiveObject
         {
             AvailablePorts.Clear();
             var ports = _serialPortService.GetAvailablePorts();
-            
+
             foreach (var port in ports)
             {
                 AvailablePorts.Add(port);
@@ -152,19 +174,23 @@ public class MainWindowViewModel : ReactiveObject
 
     private void OnConnectionStateChanged(object? sender, bool isConnected)
     {
-        IsConnected = isConnected;
-        Status = isConnected ? "Connected" : "Disconnected";
-        
-        this.RaisePropertyChanged(nameof(CanConnect));
-        
-        _logger.LogInformation("Connection state changed to {IsConnected}", isConnected);
+        Dispatcher.UIThread.Post(() =>
+        {
+            IsConnected = isConnected;
+            Status = isConnected ? "Connected" : "Disconnected";
+            this.RaisePropertyChanged(nameof(CanConnect));
+            _logger.LogInformation("Connection state changed to {IsConnected}", isConnected);
+        });
     }
 
     private void OnDataReceived(object? sender, string data)
     {
         // TODO: Parse GRBL responses and update position/status
         // For now, just log the received data
-        _logger.LogDebug("Received data: {Data}", data.Trim());
+        Dispatcher.UIThread.Post(() =>
+        {
+            _logger.LogDebug("Received data: {Data}", data.Trim());
+        });
     }
 
     #endregion

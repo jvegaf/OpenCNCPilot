@@ -21,10 +21,10 @@ Resumen Fase 1 (hallazgos clave)
 - [x] Migrar ventana principal
 - [ ] Adaptar controles custom
 - [ ] Migrar diálogos y ventanas secundarias
-    - [ ] SettingsWindow → Avalonia
+    - [x] SettingsWindow → Avalonia
     - [ ] GrblSettingsWindow → Avalonia
     - [ ] EditMacroItemWindow → Avalonia
-    - [ ] EnterNumberWindow → Avalonia
+    - [x] EnterNumberWindow → Avalonia
     - [ ] WarningWindow → Avalonia
 - [ ] Implementar visualización 3D (OpenGL)
  - [ ] PoC visor OpenGL/Skia (ejes básicos, zoom/rotación)
@@ -64,4 +64,8 @@ OpenCNCPilot/
 - Estructura modular creada: `Core`, `Hardware`, `UI` y `tests/`.
 - Servicio de puertos seriales implementado (`ISerialPortService` y `SerialPortService`).
  - CI configurado: build/test en ubuntu y windows; cobertura enviada a Codecov.
+ - Servicio de diálogos implementado (`IDialogService` + `AvaloniaDialogService`) y registrado en DI.
+ - `SettingsWindow` migrada a Avalonia (View + ViewModel) y accesible desde `MainWindow` vía comando.
+ - Control OpenGL `GCodeViewport` integrado (placeholder de render con frame loop).
+ - Diálogo de entrada numérica soportado mediante `PromptNumberAsync` en `IDialogService`.
 
