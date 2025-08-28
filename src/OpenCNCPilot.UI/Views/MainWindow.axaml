@@ -5,6 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:controls="using:OpenCNCPilot.UI.Views.Controls"
+  xmlns:ac="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="OpenCNCPilot.UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -128,23 +129,42 @@
                FitRequestId="{Binding FitRequestId}"
                RotateSensitivity="{Binding ViewerRotateSensitivity}"
                PanSensitivity="{Binding ViewerPanSensitivity}"
-               ZoomStepFactor="{Binding ViewerZoomStepFactor}" />
+               ZoomStepFactor="{Binding ViewerZoomStepFactor}"
+               ShowGrid="{Binding ViewerShowGrid}"
+               ShowOrigin="{Binding ViewerShowOrigin}"
+               ShowBounds="{Binding ViewerShowBounds}"
+               GridMinPixelStep="{Binding ViewerGridMinPixelStep}" />
     <!-- Overlay zoom toolbar -->
     <StackPanel Orientation="Horizontal" Spacing="6" Margin="10"
                 HorizontalAlignment="Right" VerticalAlignment="Top">
-      <Button Content="Fit" Command="{Binding FitToViewCommand}"/>
+  <Button Content="Fit" Command="{Binding FitToViewCommand}"/>
+  <Button Content="Fit+Reset" Command="{Binding FitAndResetViewCommand}" ToolTip.Tip="Reinicia vista y ajusta límites"/>
       <Button Content="-" Width="28" Command="{Binding ZoomOutCommand}"/>
       <Button Content="+" Width="28" Command="{Binding ZoomInCommand}"/>
       <Button Content="100%" Command="{Binding ZoomResetCommand}"/>
   <Button Content="Reset" Command="{Binding ResetViewCommand}"/>
-      <Button Content="⟲" Width="28" Command="{Binding RotateLeftCommand}"/>
+  <Button Content="⟲" Width="28" Command="{Binding RotateLeftCommand}"/>
       <Button Content="⟳" Width="28" Command="{Binding RotateRightCommand}"/>
       <Button Content="↑" Width="28" Command="{Binding RotateUpCommand}"/>
       <Button Content="↓" Width="28" Command="{Binding RotateDownCommand}"/>
+  <Button Content="⊟ 2D" Command="{Binding SnapTo2DCommand}" ToolTip.Tip="Vista ortográfica (X-Y)"/>
       <Button Content="←" Width="28" Command="{Binding PanLeftCommand}"/>
       <Button Content="→" Width="28" Command="{Binding PanRightCommand}"/>
       <Button Content="⇑" Width="28" Command="{Binding PanUpCommand}"/>
       <Button Content="⇓" Width="28" Command="{Binding PanDownCommand}"/>
+      <TextBlock Text="|" Margin="6,0" VerticalAlignment="Center" Opacity="0.5"/>
+      <ToggleButton Content="▦ Grid" IsChecked="{Binding ViewerShowGrid}"
+                    ToolTip.Tip="Mostrar/Ocultar grilla"/>
+      <ToggleButton Content="⊕ Origin" IsChecked="{Binding ViewerShowOrigin}"
+                    ToolTip.Tip="Mostrar/Ocultar origen (0,0)"/>
+      <ToggleButton Content="▣ Bounds" IsChecked="{Binding ViewerShowBounds}"
+                    ToolTip.Tip="Mostrar/Ocultar límites del G-Code"/>
+      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="8,0,0,0">
+        <TextBlock Text="Grid px:" VerticalAlignment="Center"/>
+        <ac:NumericUpDown Value="{Binding ViewerGridMinPixelStep}"
+                           Minimum="4" Maximum="200" Increment="2" Width="80" FormatString="F0"
+                           ToolTip.Tip="Tamaño mínimo en píxeles entre líneas de grilla"/>
+      </StackPanel>
     </StackPanel>
   </Grid>
       </Border>

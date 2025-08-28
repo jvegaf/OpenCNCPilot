@@ -41,6 +41,10 @@ public class MainWindowViewModel : ReactiveObject
     private double _viewerRotateSensitivity = 0.3;
     private double _viewerPanSensitivity = 0.02;
     private double _viewerZoomStepFactor = 1.1;
+    private bool _viewerShowGrid = true;
+    private bool _viewerShowOrigin = true;
+    private bool _viewerShowBounds = false;
+    private double _viewerGridMinPixelStep = 30.0;
 
     public MainWindowViewModel(ILogger<MainWindowViewModel> logger, ISerialPortService serialPortService, IDialogService dialogService, ISettingsService settingsService, IGCodeParser gcodeParser)
     {
@@ -78,6 +82,10 @@ public class MainWindowViewModel : ReactiveObject
                         ViewerRotateSensitivity = s1.ViewerRotateSensitivity;
                         ViewerPanSensitivity = s1.ViewerPanSensitivity;
                         ViewerZoomStepFactor = s1.ViewerZoomStepFactor;
+                        ViewerShowGrid = s1.ViewerShowGrid;
+                        ViewerShowOrigin = s1.ViewerShowOrigin;
+                        ViewerShowBounds = s1.ViewerShowBounds;
+                        ViewerGridMinPixelStep = s1.ViewerGridMinPixelStep;
                     });
                 }
                 vm.CloseRequested -= OnClose;
@@ -133,6 +141,19 @@ public class MainWindowViewModel : ReactiveObject
             ViewerRotationY = 45.0;
             ViewerPanX = 0.0;
             ViewerPanY = 0.0;
+        });
+        SnapTo2DCommand = ReactiveCommand.Create(() =>
+        {
+            ViewerRotationX = 0.0;
+            ViewerRotationY = 0.0;
+        });
+        FitAndResetViewCommand = ReactiveCommand.Create(() =>
+        {
+            ViewerRotationX = 30.0;
+            ViewerRotationY = 45.0;
+            ViewerPanX = 0.0;
+            ViewerPanY = 0.0;
+            FitRequestId++;
         });
     RotateLeftCommand = ReactiveCommand.Create(() => { ViewerRotationY -= 5.0; });
     RotateRightCommand = ReactiveCommand.Create(() => { ViewerRotationY += 5.0; });
@@ -314,6 +335,30 @@ public class MainWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref _viewerZoomStepFactor, value);
     }
 
+    public bool ViewerShowGrid
+    {
+        get => _viewerShowGrid;
+        set => this.RaiseAndSetIfChanged(ref _viewerShowGrid, value);
+    }
+
+    public bool ViewerShowOrigin
+    {
+        get => _viewerShowOrigin;
+        set => this.RaiseAndSetIfChanged(ref _viewerShowOrigin, value);
+    }
+
+    public bool ViewerShowBounds
+    {
+        get => _viewerShowBounds;
+        set => this.RaiseAndSetIfChanged(ref _viewerShowBounds, value);
+    }
+
+    public double ViewerGridMinPixelStep
+    {
+        get => _viewerGridMinPixelStep;
+        set => this.RaiseAndSetIfChanged(ref _viewerGridMinPixelStep, value);
+    }
+
     #endregion
 
     #region Commands
@@ -330,6 +375,8 @@ public class MainWindowViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> ZoomOutCommand { get; }
     public ReactiveCommand<Unit, Unit> ZoomResetCommand { get; }
     public ReactiveCommand<Unit, Unit> ResetViewCommand { get; }
+    public ReactiveCommand<Unit, Unit> SnapTo2DCommand { get; }
+    public ReactiveCommand<Unit, Unit> FitAndResetViewCommand { get; }
     public ReactiveCommand<Unit, Unit> RotateLeftCommand { get; }
     public ReactiveCommand<Unit, Unit> RotateRightCommand { get; }
     public ReactiveCommand<Unit, Unit> RotateUpCommand { get; }
@@ -450,6 +497,10 @@ public class MainWindowViewModel : ReactiveObject
             ViewerRotateSensitivity = s.ViewerRotateSensitivity;
             ViewerPanSensitivity = s.ViewerPanSensitivity;
             ViewerZoomStepFactor = s.ViewerZoomStepFactor;
+            ViewerShowGrid = s.ViewerShowGrid;
+            ViewerShowOrigin = s.ViewerShowOrigin;
+            ViewerShowBounds = s.ViewerShowBounds;
+            ViewerGridMinPixelStep = s.ViewerGridMinPixelStep;
         }
         catch { }
     }

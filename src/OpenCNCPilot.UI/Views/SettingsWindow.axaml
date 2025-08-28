@@ -13,7 +13,7 @@
   <Grid RowDefinitions="* , Auto" Margin="16">
     <StackPanel Spacing="10">
       <TextBlock Text="Serial Settings" FontWeight="Bold" FontSize="14"/>
-  <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+      <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
         <TextBlock Grid.Row="0" Grid.Column="0" Text="Default COM Port:" VerticalAlignment="Center"/>
         <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DefaultComPort}"/>
 
@@ -37,6 +37,19 @@
         <ac:NumericUpDown Grid.Row="5" Grid.Column="1" Value="{Binding ViewerZoomStepFactor}"
                           Minimum="1.01" Maximum="1.5" Increment="0.01" FormatString="F2"
                           ToolTip.Tip="Rango recomendado: 1.01 – 1.5"/>
+
+      <TextBlock Grid.Row="6" Grid.Column="0" Text="Viewer Show Grid:" VerticalAlignment="Center"/>
+      <ToggleSwitch Grid.Row="6" Grid.Column="1" IsChecked="{Binding ViewerShowGrid}"/>
+
+      <TextBlock Grid.Row="7" Grid.Column="0" Text="Viewer Show Origin:" VerticalAlignment="Center"/>
+      <ToggleSwitch Grid.Row="7" Grid.Column="1" IsChecked="{Binding ViewerShowOrigin}"/>
+
+      <TextBlock Grid.Row="8" Grid.Column="0" Text="Viewer Show Bounds:" VerticalAlignment="Center"/>
+      <ToggleSwitch Grid.Row="8" Grid.Column="1" IsChecked="{Binding ViewerShowBounds}"/>
+
+      <TextBlock Grid.Row="9" Grid.Column="0" Text="Grid Min Pixel Step:" VerticalAlignment="Center"/>
+      <ac:NumericUpDown Grid.Row="9" Grid.Column="1" Value="{Binding ViewerGridMinPixelStep}"
+                    Minimum="4" Maximum="200" Increment="2" FormatString="F0"/>
       </Grid>
     </StackPanel>
 

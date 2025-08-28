@@ -14,6 +14,10 @@ public class SettingsWindowViewModel : ReactiveObject
     private double viewerRotateSensitivity = 0.3;
     private double viewerPanSensitivity = 0.02;
     private double viewerZoomStepFactor = 1.1;
+    private bool viewerShowGrid = true;
+    private bool viewerShowOrigin = true;
+    private bool viewerShowBounds = false;
+    private double viewerGridMinPixelStep = 30.0;
 
     // Rangos recomendados
     private const double MinRotateSens = 0.05;
@@ -67,6 +71,30 @@ public class SettingsWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref viewerZoomStepFactor, Math.Clamp(value, MinZoomStep, MaxZoomStep));
     }
 
+    public bool ViewerShowGrid
+    {
+        get => viewerShowGrid;
+        set => this.RaiseAndSetIfChanged(ref viewerShowGrid, value);
+    }
+
+    public bool ViewerShowOrigin
+    {
+        get => viewerShowOrigin;
+        set => this.RaiseAndSetIfChanged(ref viewerShowOrigin, value);
+    }
+
+    public bool ViewerShowBounds
+    {
+        get => viewerShowBounds;
+        set => this.RaiseAndSetIfChanged(ref viewerShowBounds, value);
+    }
+
+    public double ViewerGridMinPixelStep
+    {
+        get => viewerGridMinPixelStep;
+        set => this.RaiseAndSetIfChanged(ref viewerGridMinPixelStep, Math.Clamp(value, 4.0, 200.0));
+    }
+
     public ReactiveCommand<Unit, Unit> SaveCommand { get; }
     public ReactiveCommand<Unit, Unit> CancelCommand { get; }
 
@@ -81,7 +109,11 @@ public class SettingsWindowViewModel : ReactiveObject
             LastGCodeDirectory = LastGCodeDirectory,
             ViewerRotateSensitivity = ViewerRotateSensitivity,
             ViewerPanSensitivity = ViewerPanSensitivity,
-            ViewerZoomStepFactor = ViewerZoomStepFactor
+            ViewerZoomStepFactor = ViewerZoomStepFactor,
+            ViewerShowGrid = ViewerShowGrid,
+            ViewerShowOrigin = ViewerShowOrigin,
+            ViewerShowBounds = ViewerShowBounds,
+            ViewerGridMinPixelStep = ViewerGridMinPixelStep
         };
         await settingsService.SaveAsync(s);
         CloseRequested?.Invoke(this, true);
@@ -101,5 +133,9 @@ public class SettingsWindowViewModel : ReactiveObject
         ViewerRotateSensitivity = s.ViewerRotateSensitivity;
         ViewerPanSensitivity = s.ViewerPanSensitivity;
         ViewerZoomStepFactor = s.ViewerZoomStepFactor;
+        ViewerShowGrid = s.ViewerShowGrid;
+        ViewerShowOrigin = s.ViewerShowOrigin;
+        ViewerShowBounds = s.ViewerShowBounds;
+        ViewerGridMinPixelStep = s.ViewerGridMinPixelStep;
     }
 }

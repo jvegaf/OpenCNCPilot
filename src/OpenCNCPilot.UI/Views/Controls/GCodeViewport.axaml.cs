@@ -118,57 +118,47 @@ public partial class GCodeViewport : OpenGlControlBase
         set => SetValue(ZoomStepFactorProperty, value);
     }
 
+    // Overlays
+    public static readonly StyledProperty<bool> ShowGridProperty =
+        AvaloniaProperty.Register<GCodeViewport, bool>(nameof(ShowGrid), true);
+    public static readonly StyledProperty<bool> ShowOriginProperty =
+        AvaloniaProperty.Register<GCodeViewport, bool>(nameof(ShowOrigin), true);
+    public static readonly StyledProperty<bool> ShowBoundsProperty =
+        AvaloniaProperty.Register<GCodeViewport, bool>(nameof(ShowBounds), false);
+    public static readonly StyledProperty<double> GridMinPixelStepProperty =
+        AvaloniaProperty.Register<GCodeViewport, double>(nameof(GridMinPixelStep), 30.0);
+
+    public bool ShowGrid
+    {
+        get => GetValue(ShowGridProperty);
+        set => SetValue(ShowGridProperty, value);
+    }
+    public bool ShowOrigin
+    {
+        get => GetValue(ShowOriginProperty);
+        set => SetValue(ShowOriginProperty, value);
+    }
+    public bool ShowBounds
+    {
+        get => GetValue(ShowBoundsProperty);
+        set => SetValue(ShowBoundsProperty, value);
+    }
+    public double GridMinPixelStep
+    {
+        get => GetValue(GridMinPixelStepProperty);
+        set => SetValue(GridMinPixelStepProperty, value);
+    }
+
     private void AutoFit()
     {
         if (Commands is null || Commands.Count == 0)
             return;
-        double minX = double.PositiveInfinity, minY = double.PositiveInfinity;
-        double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity;
-        void Accumulate(double x, double y)
-        {
-            if (x < minX) minX = x; if (x > maxX) maxX = x;
-            if (y < minY) minY = y; if (y > maxY) maxY = y;
-        }
-        foreach (var c in Commands)
-        {
-            switch (c)
-            {
-                case Line l:
-                    Accumulate(l.Start.X, l.Start.Y);
-                    Accumulate(l.End.X, l.End.Y);
-                    break;
-                case Arc a:
-                    Accumulate(a.Start.X, a.Start.Y);
-                    Accumulate(a.End.X, a.End.Y);
-                    break;
-            }
-        }
-        if (!double.IsFinite(minX) || !double.IsFinite(minY) || !double.IsFinite(maxX) || !double.IsFinite(maxY))
-            return;
-        var w = Math.Max(1, Bounds.Width);
-        var h = Math.Max(1, Bounds.Height);
-        double spanX = Math.Max(1e-3, maxX - minX);
-        double spanY = Math.Max(1e-3, maxY - minY);
-        double margin = 1.1; // 10% margin
-        double scaleX = spanX / (w / 2) * margin;
-        double scaleY = spanY / (h / 2) * margin;
-        Zoom = Math.Max(scaleX, scaleY);
-
-        // Center the pan on the bounds midpoint in view space
-        double midX = (minX + maxX) / 2.0;
-        double midY = (minY + maxY) / 2.0;
-        // Transform with current rotations (Z=0) to view coordinates and set pan to align center
-        var (vx, vy) = ViewportMath.TransformWorldToView(midX, midY, 0, RotationX, RotationY, 0, 0);
-        // We want the screen center (0,0 in view coords) to map to the midpoint, so pan equals that view coord
-        PanX = vx;
-        PanY = vy;
-
-        // Center pan to content centroid in view space
-        var cx = (minX + maxX) / 2.0;
-        var cy = (minY + maxY) / 2.0;
-        // Since we draw at screen center (hw, hh), set pan so that world center maps to origin
-        PanX = -cx;
-        PanY = -cy;
+        int width = Math.Max(1, (int)Bounds.Width);
+        int height = Math.Max(1, (int)Bounds.Height);
+        var (zoom, panX, panY) = ViewportAutoFit.Compute(Commands, width, height, RotationX, RotationY);
+        Zoom = zoom;
+        PanX = panX;
+        PanY = panY;
     }
 
     protected override void OnOpenGlInit(GlInterface gl)
@@ -273,13 +263,25 @@ public partial class GCodeViewport : OpenGlControlBase
             var canvas = surface.Canvas;
             canvas.Clear(new SKColor(23, 23, 31));
 
-            // Axes
+            // Axes at screen center
             using var axisPaint = new SKPaint { IsAntialias = true, StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke };
             float hw = width / 2f, hh = height / 2f;
             axisPaint.Color = SKColors.Red;
             canvas.DrawLine(0, hh, width, hh, axisPaint);
             axisPaint.Color = SKColors.LimeGreen;
             canvas.DrawLine(hw, 0, hw, height, axisPaint);
+
+            // World origin cross (optional)
+            if (ShowOrigin)
+            {
+                using var originPaint = new SKPaint { IsAntialias = true, Color = new SKColor(255,255,255,80), StrokeWidth = 1f, Style = SKPaintStyle.Stroke };
+                double scale = Math.Max(1e-6, Zoom);
+                var (ovx, ovy) = ViewportMath.TransformWorldToView(0, 0, 0, RotationX, RotationY, PanX, PanY);
+                float ox = hw + (float)(ovx / scale);
+                float oy = hh - (float)(ovy / scale);
+                canvas.DrawLine(ox - 10, oy, ox + 10, oy, originPaint);
+                canvas.DrawLine(ox, oy - 10, ox, oy + 10, originPaint);
+            }
 
             // Toolpath lines (XY projection)
             if (Commands is { Count: > 0 })
@@ -319,6 +321,69 @@ public partial class GCodeViewport : OpenGlControlBase
                     }
                 }
             }
+
+            // Grid (optional) in world coordinates projected; coarse approach based on pixel step
+            if (ShowGrid)
+            {
+                using var gridPaint = new SKPaint { IsAntialias = false, Color = new SKColor(255,255,255,20), StrokeWidth = 1f, Style = SKPaintStyle.Stroke };
+                double scale = Math.Max(1e-6, Zoom);
+                double pixelPerWorld = 1.0 / scale;
+                double desiredStepPx = Math.Max(4.0, GridMinPixelStep);
+                double rawWorldStep = desiredStepPx * pixelPerWorld;
+                // snap to nice step 1/2/5 * 10^n
+                double mag = Math.Pow(10, Math.Floor(Math.Log10(rawWorldStep)));
+                double baseVal = rawWorldStep / mag;
+                double niceBase = baseVal <= 1 ? 1 : baseVal <= 2 ? 2 : baseVal <= 5 ? 5 : 10;
+                double worldStep = niceBase * mag;
+
+                // Draw a small set around current pan to avoid huge loops
+                var (cxw, cyw) = (PanX, PanY); // approx center in world view-space
+                int lines = 50; // enough to fill typical view at various zoom levels
+                for (int i = -lines; i <= lines; i++)
+                {
+                    double wx = (cxw + i * worldStep);
+                    var (vx1, vy1) = (wx, cyw - lines * worldStep);
+                    var (vx2, vy2) = (wx, cyw + lines * worldStep);
+                    float sx1 = hw + (float)(vx1 / scale);
+                    float sy1 = hh - (float)(vy1 / scale);
+                    float sx2 = hw + (float)(vx2 / scale);
+                    float sy2 = hh - (float)(vy2 / scale);
+                    canvas.DrawLine(sx1, sy1, sx2, sy2, gridPaint);
+                }
+                for (int j = -lines; j <= lines; j++)
+                {
+                    double wy = (cyw + j * worldStep);
+                    var (vx1, vy1) = (cxw - lines * worldStep, wy);
+                    var (vx2, vy2) = (cxw + lines * worldStep, wy);
+                    float sx1 = hw + (float)(vx1 / scale);
+                    float sy1 = hh - (float)(vy1 / scale);
+                    float sx2 = hw + (float)(vx2 / scale);
+                    float sy2 = hh - (float)(vy2 / scale);
+                    canvas.DrawLine(sx1, sy1, sx2, sy2, gridPaint);
+                }
+            }
+
+            // Bounds (optional)
+            if (ShowBounds && Commands is { Count: > 0 })
+            {
+                if (ViewportAutoFit.TryComputeBounds(Commands, out var minX, out var minY, out var maxX, out var maxY))
+                {
+                    using var boundsPaint = new SKPaint { IsAntialias = true, Color = new SKColor(255, 215, 0, 140), StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke };
+                    double scale = Math.Max(1e-6, Zoom);
+                    var (vx1, vy1) = ViewportMath.TransformWorldToView(minX, minY, 0, RotationX, RotationY, PanX, PanY);
+                    var (vx2, vy2) = ViewportMath.TransformWorldToView(maxX, maxY, 0, RotationX, RotationY, PanX, PanY);
+                    float sx1 = hw + (float)(vx1 / scale);
+                    float sy1 = hh - (float)(vy1 / scale);
+                    float sx2 = hw + (float)(vx2 / scale);
+                    float sy2 = hh - (float)(vy2 / scale);
+                    // Normalize coordinates to build rect
+                    var left = Math.Min(sx1, sx2);
+                    var top = Math.Min(sy1, sy2);
+                    var right = Math.Max(sx1, sx2);
+                    var bottom = Math.Max(sy1, sy2);
+                    canvas.DrawRect(SKRect.Create(left, top, right - left, bottom - top), boundsPaint);
+                }
+            }
         }
         catch
         {
@@ -343,7 +408,11 @@ public partial class GCodeViewport : OpenGlControlBase
             change.Property == PanYProperty ||
             change.Property == RotateSensitivityProperty ||
             change.Property == PanSensitivityProperty ||
-            change.Property == ZoomStepFactorProperty)
+            change.Property == ZoomStepFactorProperty ||
+            change.Property == ShowGridProperty ||
+            change.Property == ShowOriginProperty ||
+            change.Property == ShowBoundsProperty ||
+            change.Property == GridMinPixelStepProperty)
         {
             if (change.Property == CommandsProperty || change.Property == FitRequestIdProperty)
                 AutoFit();

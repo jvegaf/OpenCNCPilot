@@ -48,6 +48,8 @@ Integración en UI (avance)
  - [x] Reset del visor (comando y botón en toolbar)
  - [x] Sensibilidades configurables (Rotate/Pan/Zoom) con persistencia en Settings y bindings en `GCodeViewport`
  - [x] AutoFit centra el encuadre ajustando `PanX/PanY` al punto medio de los bounds
+ - [x] AutoFit validado por TDD: `ViewportAutoFitTests` y helper puro `ViewportAutoFit.Compute()`
+ - [x] Refactor `GCodeViewport.AutoFit()` -> usa `ViewportAutoFit` y corrige pan inconsistente
 
 ## Fase 4: Testing y Estabilización (2 semanas)
 - [ ] Pruebas en Windows
@@ -68,6 +70,10 @@ Avances implementados (TDD Phase 3)
 - Tests UI adicionales: `MainWindowViewModel_ViewportTests.ResetViewCommand_Resets_Viewer_Properties` y `GCodeViewport_SensitivitiesTests` (defaults y configurabilidad de sensibilidades).
 - Nuevo helper `ViewportMath` encapsula la proyección ortográfica con rotaciones X/Y y pan.
 - `GCodeViewport` integra rotación/pan (StyledProperties `RotationX`, `RotationY`, `PanX`, `PanY`) aplicadas en render Skia, y añade `RotateSensitivity`, `PanSensitivity`, `ZoomStepFactor` como `StyledProperty` para interacción configurable; `AutoFit()` ahora centra pan y ajusta `Zoom`.
+ - Extraído `ViewportAutoFit` (puro) y cubierto con `ViewportAutoFitTests`:
+     - `Compute_Sets_Zoom_To_Fit_Bounds_With_Margin`
+     - `Compute_Centers_Using_Rotation_Transform`
+ - `GCodeViewport.AutoFit()` refactorizado para delegar en `ViewportAutoFit` y usar `Bounds` reales del control; corrige lógica duplicada y pan contradictorio.
 - `MainWindowViewModel` expone propiedades `ViewerRotationX/Y`, `ViewerPanX/Y` y comandos `Rotate*/Pan*`; `MainWindow.axaml` agrega bindings y botones de control.
 - `MainWindowViewModel` añade `ResetViewCommand` y propiedades `ViewerRotateSensitivity`, `ViewerPanSensitivity`, `ViewerZoomStepFactor`; `MainWindow.axaml` enlaza estas propiedades al `GCodeViewport` y agrega botón "Reset".
 - `SettingsWindow` incorpora campos para sensibilidades del visor (rotate/pan/zoom step) y las persiste vía `ISettingsService` (`JsonSettingsService`).

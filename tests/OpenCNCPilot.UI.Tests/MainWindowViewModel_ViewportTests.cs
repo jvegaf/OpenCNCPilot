@@ -92,4 +92,32 @@ public class MainWindowViewModel_ViewportTests
         Assert.Equal(0.0, vm.ViewerPanX, 6);
         Assert.Equal(0.0, vm.ViewerPanY, 6);
     }
+
+    [Fact]
+    public void SnapTo2DCommand_Sets_Rotations_To_Zero()
+    {
+        var vm = new MainWindowViewModel(new NullLogger<MainWindowViewModel>(), new DummySerial(), new DummyDialogs(), new InMemorySettings(), new GCodeParser());
+        vm.ViewerRotationX = 12.3;
+        vm.ViewerRotationY = -45.6;
+        vm.SnapTo2DCommand.Execute().Subscribe();
+        Assert.Equal(0.0, vm.ViewerRotationX, 6);
+        Assert.Equal(0.0, vm.ViewerRotationY, 6);
+    }
+
+    [Fact]
+    public void FitAndResetViewCommand_Resets_View_And_Increments_Fit()
+    {
+        var vm = new MainWindowViewModel(new NullLogger<MainWindowViewModel>(), new DummySerial(), new DummyDialogs(), new InMemorySettings(), new GCodeParser());
+        vm.ViewerRotationX = -10;
+        vm.ViewerRotationY = 22;
+        vm.ViewerPanX = 5;
+        vm.ViewerPanY = -3;
+        var before = vm.FitRequestId;
+        vm.FitAndResetViewCommand.Execute().Subscribe();
+        Assert.Equal(30.0, vm.ViewerRotationX, 6);
+        Assert.Equal(45.0, vm.ViewerRotationY, 6);
+        Assert.Equal(0.0, vm.ViewerPanX, 6);
+        Assert.Equal(0.0, vm.ViewerPanY, 6);
+        Assert.Equal(before + 1, vm.FitRequestId);
+    }
 }
