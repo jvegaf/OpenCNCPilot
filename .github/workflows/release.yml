@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  publish:
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: OpenCNCPilot-linux-x64
+          - os: windows-latest
+            rid: win-x64
+            artifact: OpenCNCPilot-win-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libgl1-mesa-glx libfontconfig1-dev
+
+      - name: Restore
+        run: dotnet restore OpenCNCPilot.Modern.sln
+
+      - name: Publish
+        run: >
+          dotnet publish src/OpenCNCPilot.UI/OpenCNCPilot.UI.csproj
+          -c Release -r ${{ matrix.rid }} --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -o ./publish/${{ matrix.rid }}
+
+      - name: Archive (zip)
+        if: matrix.os == 'windows-latest'
+        run: |
+          Compress-Archive -Path ./publish/${{ matrix.rid }}/* -DestinationPath ${{ matrix.artifact }}.zip
+        shell: pwsh
+
+      - name: Archive (tar.gz)
+        if: matrix.os != 'windows-latest'
+        run: tar -czf ${{ matrix.artifact }}.tar.gz -C ./publish/${{ matrix.rid }} .
+
+      - name: Upload Windows artifact
+        if: matrix.os == 'windows-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}.zip
+          generate_release_notes: true
+
+      - name: Upload Linux artifact
+        if: matrix.os != 'windows-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}.tar.gz
+          generate_release_notes: true
