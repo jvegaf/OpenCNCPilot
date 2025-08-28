@@ -1,0 +1,17 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OpenCNCPilot.UI.ViewModels"
+        x:Class="OpenCNCPilot.UI.Views.WarningWindow"
+        x:DataType="vm:WarningWindowViewModel"
+        Title="Warnings" Width="600" Height="400">
+  <Design.DataContext>
+    <vm:WarningWindowViewModel/>
+  </Design.DataContext>
+
+  <Grid RowDefinitions="*,Auto" Margin="10">
+  <TextBox Grid.Row="0" Text="{Binding Text}" AcceptsReturn="True" IsReadOnly="True"/>
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+      <Button Content="OK" Width="80" Click="OnOkClick"/>
+    </StackPanel>
+  </Grid>
+</Window>

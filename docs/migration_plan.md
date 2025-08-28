@@ -25,7 +25,7 @@ Resumen Fase 1 (hallazgos clave)
     - [ ] GrblSettingsWindow → Avalonia
     - [ ] EditMacroItemWindow → Avalonia
     - [x] EnterNumberWindow → Avalonia
-    - [ ] WarningWindow → Avalonia
+    - [x] WarningWindow → Avalonia
 - [ ] Implementar visualización 3D (OpenGL)
  - [ ] PoC visor OpenGL/Skia (ejes básicos, zoom/rotación)
 
@@ -68,4 +68,12 @@ OpenCNCPilot/
  - `SettingsWindow` migrada a Avalonia (View + ViewModel) y accesible desde `MainWindow` vía comando.
  - Control OpenGL `GCodeViewport` integrado (placeholder de render con frame loop).
  - Diálogo de entrada numérica soportado mediante `PromptNumberAsync` en `IDialogService`.
+ - `WarningWindow` migrado y expuesto vía `IDialogService.ShowWarningsAsync`; flujos de warnings deben usar este servicio en la UI moderna.
+ - Corregido error de build AVLN:0004 añadiendo paquete `Avalonia.Controls.DataGrid` y manteniendo `StyleInclude` del tema.
+ - Agregado `DemoWarningsCommand` en `MainWindowViewModel` y botón "Show Parse Warnings (Demo)" para verificación manual del `WarningWindow`.
+ - Inyectado `ISettingsService` en `MainWindowViewModel` y creado `LoadGCodeFileCommand`:
+     - Usa `IDialogService.OpenFilesAsync` con filtros de G‑Code y directorio inicial desde `LastGCodeDirectory`.
+     - Actualiza `LastGCodeDirectory` al seleccionar archivo (persistido en JSON).
+     - Implementa heurística temporal de warnings (Q desconocida, `S-` negativo, múltiples G0/1/2/3 en una línea) y muestra `ShowWarningsAsync` si corresponde.
+ - Build Release de `OpenCNCPilot.UI` exitoso en Linux tras las correcciones.
 

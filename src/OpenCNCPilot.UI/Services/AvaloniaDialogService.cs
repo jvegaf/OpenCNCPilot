@@ -6,6 +6,8 @@ using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Layout;
 using Avalonia;
+using OpenCNCPilot.UI.ViewModels;
+using OpenCNCPilot.UI.Views;
 
 namespace OpenCNCPilot.UI.Services;
 
@@ -143,6 +145,17 @@ public class AvaloniaDialogService : IDialogService
 
         await wnd.ShowDialog(owner);
         return result;
+    }
+
+    public async Task ShowWarningsAsync(string header, System.Collections.Generic.IEnumerable<string> warnings)
+    {
+        var owner = _getMainWindow();
+        if (owner is null) return;
+
+        var vm = new WarningWindowViewModel();
+        vm.Load(header, warnings);
+        var wnd = new WarningWindow { DataContext = vm };
+        await wnd.ShowDialog(owner);
     }
 
     private static async Task<bool> ShowMessageWindowAsync(Window owner, string title, string message, string primaryText, string? closeText)

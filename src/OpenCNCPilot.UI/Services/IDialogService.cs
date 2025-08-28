@@ -10,4 +10,5 @@ public interface IDialogService
     Task AlertAsync(string title, string message, string okText = "OK");
     Task<bool> ConfirmAsync(string title, string message, string confirmText = "OK", string cancelText = "Cancel");
     Task<double?> PromptNumberAsync(string title, string message, double? defaultValue = null, double? min = null, double? max = null, int decimals = 3);
+    Task ShowWarningsAsync(string header, System.Collections.Generic.IEnumerable<string> warnings);
 }
