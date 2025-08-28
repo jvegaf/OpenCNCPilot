@@ -1,15 +1,17 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Reactive;
-using System.Reactive.Linq;
-using ReactiveUI;
-using Microsoft.Extensions.Logging;
-using OpenCNCPilot.Hardware.Services;
-using OpenCNCPilot.Core.Geometry;
-using Avalonia.Threading;
-using OpenCNCPilot.UI.Services;
 using System.IO;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Linq;
+using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
+using OpenCNCPilot.Core.GCode;
+using OpenCNCPilot.Core.GCode.GCodeCommands;
+using OpenCNCPilot.Core.Geometry;
+using OpenCNCPilot.Hardware.Services;
+using OpenCNCPilot.UI.Services;
+using ReactiveUI;
 
 namespace OpenCNCPilot.UI.ViewModels;
 
@@ -22,19 +24,24 @@ public class MainWindowViewModel : ReactiveObject
     private readonly ISerialPortService _serialPortService;
     private readonly IDialogService _dialogService;
     private readonly ISettingsService _settingsService;
+    private readonly IGCodeParser _gcodeParser;
 
+    private ReadOnlyObservableCollection<Command>? _gcodeCommands;
     private string _selectedPort = string.Empty;
     private string _status = "Disconnected";
     private bool _isConnected = false;
     private Vector3 _machinePosition = Vector3.Origin;
     private Vector3 _workPosition = Vector3.Origin;
+    private double _viewerZoom = 1.0;
+    private int _fitRequestId = 0;
 
-    public MainWindowViewModel(ILogger<MainWindowViewModel> logger, ISerialPortService serialPortService, IDialogService dialogService, ISettingsService settingsService)
+    public MainWindowViewModel(ILogger<MainWindowViewModel> logger, ISerialPortService serialPortService, IDialogService dialogService, ISettingsService settingsService, IGCodeParser gcodeParser)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _serialPortService = serialPortService ?? throw new ArgumentNullException(nameof(serialPortService));
         _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
+        _gcodeParser = gcodeParser ?? throw new ArgumentNullException(nameof(gcodeParser));
 
         // Initialize commands
         var canConnectObs = this
@@ -43,7 +50,6 @@ public class MainWindowViewModel : ReactiveObject
             .ObserveOn(RxApp.MainThreadScheduler);
 
         ConnectCommand = ReactiveCommand.Create(Connect, canConnectObs, RxApp.MainThreadScheduler);
-
         var canDisconnectObs = this
             .WhenAnyValue(x => x.IsConnected)
             .ObserveOn(RxApp.MainThreadScheduler);
@@ -58,6 +64,12 @@ public class MainWindowViewModel : ReactiveObject
             _logger.LogInformation("Settings dialog closed with result: {Result}", result);
         });
 
+        // Viewer controls
+        FitToViewCommand = ReactiveCommand.Create(() => { FitRequestId++; });
+        ZoomInCommand = ReactiveCommand.Create(() => { ViewerZoom = Math.Max(1e-6, ViewerZoom * 0.8); });
+        ZoomOutCommand = ReactiveCommand.Create(() => { ViewerZoom = Math.Max(1e-6, ViewerZoom / 0.8); });
+        ZoomResetCommand = ReactiveCommand.Create(() => { ViewerZoom = 1.0; });
+
         // Add demo warnings command for manual verification
         DemoWarningsCommand = ReactiveCommand.CreateFromTask(async () =>
         {
@@ -70,7 +82,7 @@ public class MainWindowViewModel : ReactiveObject
             await ShowParseWarningsAsync(sample);
         });
 
-        // Load G-Code command: pick file, update last directory, basic warning detection placeholder
+        // Load G-Code command: pick file, update last directory, parse con Core y mostrar warnings
         LoadGCodeFileCommand = ReactiveCommand.CreateFromTask(async () =>
         {
             var settings = await _settingsService.LoadAsync();
@@ -90,21 +102,24 @@ public class MainWindowViewModel : ReactiveObject
                 }
 
                 var lines = await File.ReadAllLinesAsync(file);
-                var warnings = new System.Collections.Generic.List<string>();
+                try
+                {
+                    _gcodeParser.IgnoreAdditionalAxes = settings.IgnoreAdditionalAxes;
+                    _gcodeParser.Parse(lines);
+                }
+                catch (ParseException pex)
+                {
+                    _logger.LogWarning(pex, "GCode parse error");
+                    await _dialogService.AlertAsync("Parse Error", pex.Message);
+                    return;
+                }
 
-                // Placeholder warning detection (until Core parser is migrated)
-                // 1) Unknown word 'Q'
-                if (lines.Any(l => l.Contains('Q')))
-                    warnings.Add("ignoring unknown word (letter): \"Q\" detected in file");
-                // 2) Negative spindle speed 'S-'
-                if (lines.Any(l => l.IndexOf("S-", StringComparison.OrdinalIgnoreCase) >= 0))
-                    warnings.Add("spindle speed must be positive (negative S value found)");
-                // 3) Multiple motion commands in one line (very naive heuristic)
-                if (lines.Any(l => new[]{"G0","G1","G2","G3"}.Count(g => l.Contains(g, StringComparison.OrdinalIgnoreCase)) > 1))
-                    warnings.Add("multiple motion commands detected in a single line");
+                if (_gcodeParser.Warnings.Count > 0)
+                    await ShowParseWarningsAsync(_gcodeParser.Warnings);
 
-                if (warnings.Count > 0)
-                    await ShowParseWarningsAsync(warnings);
+                // Exponer comandos parseados a la vista (snapshot de solo lectura)
+                var list = new ObservableCollection<Command>(_gcodeParser.Commands);
+                GCodeCommands = new ReadOnlyObservableCollection<Command>(list);
 
                 _logger.LogInformation("Loaded G-Code file: {File}", file);
             }
@@ -163,6 +178,24 @@ public class MainWindowViewModel : ReactiveObject
         private set => this.RaiseAndSetIfChanged(ref _workPosition, value);
     }
 
+    public ReadOnlyObservableCollection<Command>? GCodeCommands
+    {
+        get => _gcodeCommands;
+        private set => this.RaiseAndSetIfChanged(ref _gcodeCommands, value);
+    }
+
+    public double ViewerZoom
+    {
+        get => _viewerZoom;
+        set => this.RaiseAndSetIfChanged(ref _viewerZoom, value);
+    }
+
+    public int FitRequestId
+    {
+        get => _fitRequestId;
+        set => this.RaiseAndSetIfChanged(ref _fitRequestId, value);
+    }
+
     #endregion
 
     #region Commands
@@ -173,6 +206,10 @@ public class MainWindowViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> OpenSettingsCommand { get; }
     public ReactiveCommand<Unit, Unit> DemoWarningsCommand { get; }
     public ReactiveCommand<Unit, Unit> LoadGCodeFileCommand { get; }
+    public ReactiveCommand<Unit, Unit> FitToViewCommand { get; }
+    public ReactiveCommand<Unit, Unit> ZoomInCommand { get; }
+    public ReactiveCommand<Unit, Unit> ZoomOutCommand { get; }
+    public ReactiveCommand<Unit, Unit> ZoomResetCommand { get; }
 
     public Interaction<SettingsWindowViewModel, bool?> ShowSettings { get; } = new();
 

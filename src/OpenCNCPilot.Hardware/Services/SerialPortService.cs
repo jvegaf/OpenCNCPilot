@@ -42,7 +42,7 @@ public class SerialPortService : ISerialPortService, IDisposable
         }
     }
 
-    public void Open(string portName, int baudRate, Parity parity = Parity.None, 
+    public void Open(string portName, int baudRate, Parity parity = Parity.None,
                      int dataBits = 8, StopBits stopBits = StopBits.One)
     {
         if (string.IsNullOrEmpty(portName))
@@ -126,7 +126,7 @@ public class SerialPortService : ISerialPortService, IDisposable
                         _logger.LogInformation("Closing serial port {PortName}", _serialPort.PortName);
                         _serialPort.Close();
                     }
-                    
+
                     _serialPort.DataReceived -= OnDataReceived;
                     _serialPort.ErrorReceived -= OnErrorReceived;
                     _serialPort.Dispose();

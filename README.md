@@ -10,26 +10,26 @@ This is especially useful for engraving metal surfaces with V-shaped cutters whe
 It is written in C# and uses WPF for its UI. Sadly this means that it will not run under linux as Mono does not support WPF.
 The 3D viewport is managed with HelixToolkit.
 
-Here is a quick overview on YouTube [https://www.youtube.com/watch?v=XDCu3cgOjCY](https://www.youtube.com/watch?v=XDCu3cgOjCY)  
+Here is a quick overview on YouTube [https://www.youtube.com/watch?v=XDCu3cgOjCY](https://www.youtube.com/watch?v=XDCu3cgOjCY)
 
 ### Installation
-**Install .NET 4.6**, this has been the cause of at least 6 support requests so far.  
+**Install .NET 4.6**, this has been the cause of at least 6 support requests so far.
 Go to the [Releases section](https://github.com/martin2250/OpenCNCPilot/releases/latest) and download the latest binaries (or compile it from source).
 Unzip **all** files to your hard drive and run "OpenCNCPilot.exe"
 
 Make sure to use GRBL version 1.1f (later versions may work but are yet untested). **Earlier versions (0.8, 0.9, 1.0) will NOT work!** There are no workarounds, so you need to update your controller to use OpenCNCPilot.
 
 ### Quick Start Guide
-Before the first run, you have to select a Serial Port, the selector is hidden in the Settings menu that you can access in the "Machine" tab. Other than that you don't need to modify any settings.  
+Before the first run, you have to select a Serial Port, the selector is hidden in the Settings menu that you can access in the "Machine" tab. Other than that you don't need to modify any settings.
 Now you can connect to your machine.
 
 Open gcode or height map files by dragging them into the window, or using the according buttons.
 
-To create a new height map, open the "Probing" tab and click "Create New". You will be asked to enter the dimensions.  
+To create a new height map, open the "Probing" tab and click "Create New". You will be asked to enter the dimensions.
 **Be sure to enter the actual coordinates** eg when your toolpath is in the negative X-direction, enter "-50" to "0" instead of "0" to "50". You can also use the "Size from GCode" button to fill in everything automatically.
 You will see a preview of the area and the individual points in the main window
 
-To probe the area, set up your work coordinate system by going to your selected origin and using the "Zero (G10)" in the "Manual" tab, remember that this doesn't actually send the line, you can review it must send it manually. You can also use G92, but remember that G92 isn't permanent and will be lost after a reset.  
+To probe the area, set up your work coordinate system by going to your selected origin and using the "Zero (G10)" in the "Manual" tab, remember that this doesn't actually send the line, you can review it must send it manually. You can also use G92, but remember that G92 isn't permanent and will be lost after a reset.
 **Make sure to connect A5 of your Arduino to the tool and GND to your surface**, and hit "Run".
 
 OpenCNCPilot will now probe your board at the locations marked with a red dot and build the map from that data.
@@ -65,6 +65,17 @@ In the input files, arcs can be defined via center (IJ) coordinates or by a radi
 * M M-codes
 
 #### Donations
-Since this project did get some attention, I'll include a donation button. Getting this application to a point where it's 'production-ready' took many days of non-stop work before and during the fist three semesters of my physics studies.  
-Please note that my programs will always be (ad-)free  
+Since this project did get some attention, I'll include a donation button. Getting this application to a point where it's 'production-ready' took many days of non-stop work before and during the fist three semesters of my physics studies.
+Please note that my programs will always be (ad-)free
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=7F783UGMYHRWN)
+
+## Chatmodes de GitHub Copilot (Desarrollo)
+
+Para acelerar el flujo de trabajo (.NET 8, Avalonia, TDD y refactor), este repo incluye chatmodes curados desde awesome-copilot.
+
+- Ubicación: `.github/chatmodes/`
+- Sincronizar: `make chatmodes-sync` o `./scripts/sync-chatmodes.sh`
+- Instalar en VS Code: abre un `.chatmode.md` y usa la paleta "Chat: Install Chat Mode from File"
+- Más detalles y lista completa: consulta `./.github/chatmodes/README.md`
+
+Nota: los `.chatmode.md` se sincronizan desde la fuente oficial y no se versionan en Git.

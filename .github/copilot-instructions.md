@@ -4,6 +4,8 @@ Estos lineamientos guían a GitHub Copilot para generar código, tests, automati
 
 IMPORTANTE: Sigue los principios de Context Engineering descritos aquí. Antes de implementar, investiga y valida.
 
+IMPORTANTE: Toda la conversación del chat debe ser en español.
+
 
 ## 1) Objetivo del Proyecto
 

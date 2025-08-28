@@ -47,7 +47,7 @@ public interface ISerialPortService
     /// <param name="parity">Parity setting</param>
     /// <param name="dataBits">Data bits</param>
     /// <param name="stopBits">Stop bits</param>
-    void Open(string portName, int baudRate, System.IO.Ports.Parity parity = System.IO.Ports.Parity.None, 
+    void Open(string portName, int baudRate, System.IO.Ports.Parity parity = System.IO.Ports.Parity.None,
               int dataBits = 8, System.IO.Ports.StopBits stopBits = System.IO.Ports.StopBits.One);
 
     /// <summary>

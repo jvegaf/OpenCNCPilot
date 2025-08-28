@@ -301,3 +301,8 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Chatmodes descargados desde awesome-copilot (sin versionar)
+.github/chatmodes/*.chatmode.md
+
+.github/prompts/*.prompt.md

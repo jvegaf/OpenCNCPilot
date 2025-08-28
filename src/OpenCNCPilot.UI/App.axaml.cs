@@ -1,15 +1,16 @@
 using System;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
-using OpenCNCPilot.UI.ViewModels;
-using OpenCNCPilot.UI.Views;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using OpenCNCPilot.Core.GCode;
 using OpenCNCPilot.Hardware.Services;
 using OpenCNCPilot.UI.Services;
+using OpenCNCPilot.UI.ViewModels;
+using OpenCNCPilot.UI.Views;
 
 namespace OpenCNCPilot.UI;
 
@@ -29,7 +30,7 @@ public partial class App : Application
         ConfigureServices(serviceCollection);
         _serviceProvider = serviceCollection.BuildServiceProvider();
 
-    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Line below is needed to remove Avalonia data validation.
             // Without this line you will get duplicate validations from both Avalonia and CT
@@ -64,6 +65,10 @@ public partial class App : Application
 
         // Settings
         services.AddSingleton<ISettingsService, JsonSettingsService>();
+
+        // Core services: IGCodeParser is currently stateless between Parse() calls,
+        // so Singleton is acceptable. Switch to Transient if internal state becomes per-parse.
+        services.AddSingleton<IGCodeParser, GCodeParser>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();

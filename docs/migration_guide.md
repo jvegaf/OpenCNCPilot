@@ -41,6 +41,21 @@ using Avalonia.Controls;
 - Heredar de `UserControl` o `TemplatedControl`
 - Usar `StyledProperty` en lugar de `DependencyProperty`
 
+### 6. MVVM + ReactiveUI
+- Usar `ReactiveObject` para ViewModels y `RaiseAndSetIfChanged`.
+- Comandos con `ReactiveCommand` en vez de event-handlers (`Click`).
+- `Interaction<TIn, TOut>` para diálogos sin acoplar la vista.
+
+### 7. Inyección de Dependencias (DI)
+- Configurar `Microsoft.Extensions.DependencyInjection` en `App.axaml.cs`.
+- Registrar servicios de UI (`IDialogService`, `ISettingsService`), hardware (`ISerialPortService`) y Core (`IGCodeParser`).
+- Resolver ViewModels desde el contenedor.
+
+### 8. Separación de Capas
+- Core (`OpenCNCPilot.Core`): parser de G‑Code, modelos y lógica pura (sin Avalonia ni OS-specific).
+- Hardware (`OpenCNCPilot.Hardware`): abstracciones + implementación de puertos seriales.
+- UI (`OpenCNCPilot.UI`): Views, ViewModels y servicios de UI.
+
 ## Mapeo de Controles
 
 | WPF | Avalonia | Notas |
@@ -58,6 +73,34 @@ using Avalonia.Controls;
 | `ToolBar` | `ToolBar` | Requiere NuGet adicional |
 | `StatusBar` | Panel con estilo | No hay control directo |
 | `Viewport3D` | OpenGL/SkiaSharp | Requiere implementación custom |
+
+## Viewer (OpenGL + Skia)
+- En Avalonia no existe `Viewport3D`; se usa `OpenGlControlBase` y se renderiza con Skia (`GRGlInterface` + `GRContext`).
+- Control `GCodeViewport`:
+  - `StyledProperty` de `Zoom`, `RotationX`, `RotationY`, `Commands` y `FitRequestId`.
+  - Renderiza ejes y trayectorias (Line/Arc) en proyección XY.
+  - `AutoFit()` al cambiar `Commands` y cuando `FitRequestId` aumenta.
+- Enlazar en `MainWindow.axaml`:
+  - `Commands="{Binding GCodeCommands}"`, `Zoom="{Binding ViewerZoom}"`, `FitRequestId="{Binding FitRequestId}"`.
+  - Toolbar flotante con comandos `FitToView`, `ZoomIn`, `ZoomOut`, `ZoomReset`.
+
+## Servicios de UI y Settings
+- `IDialogService`: open/save, alert/confirm, warnings, prompt numérico.
+- `ISettingsService`: persistencia JSON (System.Text.Json) con `AppSettings` (incluye `LastGCodeDirectory`, `IgnoreAdditionalAxes`).
+- Los ViewModels no deben usar APIs de plataforma; delegar a servicios.
+
+## Parser de G‑Code (Core)
+- `IGCodeParser`/`GCodeParser` en `OpenCNCPilot.Core.GCode`:
+  - Soporta G0/G1/G2/G3, units G20/G21, distancia G90/G91, planos G17/G18/G19, arcos IJK/R.
+  - Emite `Warnings` y lanza `ParseException` ante errores.
+  - Opción `IgnoreAdditionalAxes` para A/B/C.
+- `MainWindowViewModel.LoadGCodeFileCommand` invoca el parser, muestra warnings y expone `GCodeCommands`.
+
+## Gotchas (Linux/CI/OpenGL)
+- Linux: el usuario debe pertenecer al grupo `dialout` para acceder a `/dev/ttyUSB*`/`/dev/ttyACM*`.
+- OpenGL/Skia en CI/headless: puede no existir contexto GL; envolver init/render en try/catch para no crashear.
+- Paquetes del sistema: puede requerir `libgl1`, `libx11-6` u otros para render.
+- Tests de UI: evitar acceso a GL; probar ViewModels y bindings.
 
 ## Dependencias Platform-Specific
 

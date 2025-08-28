@@ -18,9 +18,9 @@ public class BooleanToColorConverter : IValueConverter
             {
                 var trueColor = colors[0].Trim();
                 var falseColor = colors[1].Trim();
-                
+
                 var colorName = boolValue ? trueColor : falseColor;
-                
+
                 return colorName.ToLowerInvariant() switch
                 {
                     "green" => Colors.Green,

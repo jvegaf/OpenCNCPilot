@@ -1,7 +1,7 @@
 using System;
 using System.Reactive;
-using ReactiveUI;
 using OpenCNCPilot.UI.Services;
+using ReactiveUI;
 
 namespace OpenCNCPilot.UI.ViewModels;
 

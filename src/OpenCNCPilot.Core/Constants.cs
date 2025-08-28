@@ -10,7 +10,7 @@ public static class Constants
 {
     public static NumberFormatInfo DecimalParseFormat = new NumberFormatInfo() { NumberDecimalSeparator = "." };
 
-    public static NumberFormatInfo DecimalOutputFormat => 
+    public static NumberFormatInfo DecimalOutputFormat =>
         new NumberFormatInfo() { NumberDecimalSeparator = ".", NumberDecimalDigits = 3 };
 
     // File filters for different file types

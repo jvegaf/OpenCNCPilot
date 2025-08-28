@@ -14,8 +14,23 @@ Resumen Fase 1 (hallazgos clave)
 ## Fase 2: Setup del Proyecto Avalonia (1 semana)
 - [x] Crear nuevo proyecto Avalonia
 - [x] Configurar estructura de carpetas
- - [ ] Migrar lógica de negocio (no-UI)
+ - [x] Migrar lógica de negocio (no-UI)
 - [x] Configurar inyección de dependencias
+
+Resumen Fase 2 (TDD y migración de Core)
+- Se migró el parser de G‑Code y modelos a `src/OpenCNCPilot.Core/GCode/*` evitando dependencias WPF.
+- Se añadieron pruebas unitarias concisas en `tests/OpenCNCPilot.Core.Tests/GCode/GCodeParserTests.cs` cubriendo:
+    - G0 rápidos sin feed obligatorio
+    - G1 métricos con `F` definido
+    - Error honesto en G1 sin feed (`ParseException`)
+    - Palabras desconocidas generan warning
+    - Velocidad de spindle negativa: warning y valor absoluto
+- Los tests pasan en `net8.0` (`dotnet test` verde). Esto asegura base estable para Fases 3 y 4.
+- Nota: En Core se ignoran por defecto ejes adicionales `A/B/C` (antes dependía de `Properties.Settings.Default.IgnoreAdditionalAxes`).
+
+Integración en UI (avance)
+- Inyectado `IGCodeParser` en DI (`App.axaml.cs`) y utilizado en `MainWindowViewModel` dentro de `LoadGCodeFileCommand`. Los warnings provienen del parser de Core y se muestran vía `IDialogService.ShowWarningsAsync`.
+- Añadido test de integración ligero en `tests/OpenCNCPilot.UI.Tests/MainWindowViewModel_GCodeTests.cs` que verifica el flujo de warnings ante palabras desconocidas.
 
 ## Fase 3: Migración de UI (3-4 semanas)
 - [x] Migrar ventana principal
@@ -27,7 +42,8 @@ Resumen Fase 1 (hallazgos clave)
     - [x] EnterNumberWindow → Avalonia
     - [x] WarningWindow → Avalonia
 - [ ] Implementar visualización 3D (OpenGL)
- - [ ] PoC visor OpenGL/Skia (ejes básicos, zoom/rotación)
+ - [x] PoC visor OpenGL/Skia (ejes básicos, AutoFit, zoom/fit)
+ - [ ] Rotación interactiva y pan con ratón
 
 ## Fase 4: Testing y Estabilización (2 semanas)
 - [ ] Pruebas en Windows
@@ -66,7 +82,7 @@ OpenCNCPilot/
  - CI configurado: build/test en ubuntu y windows; cobertura enviada a Codecov.
  - Servicio de diálogos implementado (`IDialogService` + `AvaloniaDialogService`) y registrado en DI.
  - `SettingsWindow` migrada a Avalonia (View + ViewModel) y accesible desde `MainWindow` vía comando.
- - Control OpenGL `GCodeViewport` integrado (placeholder de render con frame loop).
+ - Control OpenGL `GCodeViewport` integrado con render Skia, ejes básicos, líneas/arcos y frame loop.
  - Diálogo de entrada numérica soportado mediante `PromptNumberAsync` en `IDialogService`.
  - `WarningWindow` migrado y expuesto vía `IDialogService.ShowWarningsAsync`; flujos de warnings deben usar este servicio en la UI moderna.
  - Corregido error de build AVLN:0004 añadiendo paquete `Avalonia.Controls.DataGrid` y manteniendo `StyleInclude` del tema.
@@ -74,6 +90,12 @@ OpenCNCPilot/
  - Inyectado `ISettingsService` en `MainWindowViewModel` y creado `LoadGCodeFileCommand`:
      - Usa `IDialogService.OpenFilesAsync` con filtros de G‑Code y directorio inicial desde `LastGCodeDirectory`.
      - Actualiza `LastGCodeDirectory` al seleccionar archivo (persistido en JSON).
-     - Implementa heurística temporal de warnings (Q desconocida, `S-` negativo, múltiples G0/1/2/3 en una línea) y muestra `ShowWarningsAsync` si corresponde.
+     - Invoca parser de Core con `IgnoreAdditionalAxes` desde settings; muestra warnings generados por Core mediante `ShowWarningsAsync`.
+ - Viewer: `GCodeCommands` se exponen en el VM y se enlazan al viewport; `AutoFit()` al cambiar `Commands`; toolbar flotante con `Fit/+/−/100%` enlazada a comandos del VM; propiedades `Zoom` y `FitRequestId` enlazadas.
  - Build Release de `OpenCNCPilot.UI` exitoso en Linux tras las correcciones.
+
+### Gotchas (OpenGL/Skia en Linux y CI)
+- En runners headless puede no haber contexto GL; el control captura excepciones en init/render para no crashear.
+- Dependencias del sistema: puede requerir paquetes de X/GL (ej. `libgl1`, `libx11-6`); documentar para empaquetado.
+- Las pruebas de UI no ejercen GL; validan ViewModel y bindings para evitar fallos en entornos sin GL.
 

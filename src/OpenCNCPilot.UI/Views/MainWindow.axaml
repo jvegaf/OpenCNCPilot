@@ -115,7 +115,19 @@
       Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
       BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
       BorderThickness="1" CornerRadius="5">
-    <controls:GCodeViewport />
+  <Grid>
+    <controls:GCodeViewport Commands="{Binding GCodeCommands}"
+                             Zoom="{Binding ViewerZoom}"
+                             FitRequestId="{Binding FitRequestId}" />
+    <!-- Overlay zoom toolbar -->
+    <StackPanel Orientation="Horizontal" Spacing="6" Margin="10"
+                HorizontalAlignment="Right" VerticalAlignment="Top">
+      <Button Content="Fit" Command="{Binding FitToViewCommand}"/>
+      <Button Content="-" Width="28" Command="{Binding ZoomOutCommand}"/>
+      <Button Content="+" Width="28" Command="{Binding ZoomInCommand}"/>
+      <Button Content="100%" Command="{Binding ZoomResetCommand}"/>
+    </StackPanel>
+  </Grid>
       </Border>
 
           <!-- Log/Console Area -->

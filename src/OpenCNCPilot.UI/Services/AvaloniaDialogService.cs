@@ -2,10 +2,10 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Avalonia.Controls;
-using Avalonia.Platform.Storage;
-using Avalonia.Layout;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Platform.Storage;
 using OpenCNCPilot.UI.ViewModels;
 using OpenCNCPilot.UI.Views;
 
@@ -102,7 +102,7 @@ public class AvaloniaDialogService : IDialogService
             RowDefinitions = new RowDefinitions("Auto,Auto,Auto"),
             ColumnDefinitions = new ColumnDefinitions("Auto, *")
         };
-        grid.Children.Add(new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap, Margin = new Thickness(0,0,0,8) });
+        grid.Children.Add(new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) });
         Grid.SetRow(grid.Children[^1], 0);
         Grid.SetColumnSpan(grid.Children[^1], 2);
 
