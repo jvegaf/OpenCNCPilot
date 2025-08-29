@@ -1,6 +1,6 @@
 # Tasks — Previsualización de G-code en Avalonia
 
-Estado: Draft
+Estado: In Progress
 Owner:
 Fecha: 2025-08-29
 
@@ -50,21 +50,21 @@ Fecha: 2025-08-29
 - Aceptación: Control dibuja datos de ejemplo con fit-to-view.
 - Dep: 1.1, 1.3
 - Estimación: M
-- Estado: TODO
+- Estado: DONE
 
 2.2 Interacciones (zoom/pan/fit) + transformaciones
 - Descripción: Zoom alrededor del cursor; pan por arrastre; tecla/botón `Fit`.
 - Aceptación: Comportamiento validado manualmente; tests de transformaciones UI-agnósticas.
 - Dep: 2.1
 - Estimación: S
-- Estado: TODO
+- Estado: DONE
 
 2.3 Caché de `SKPath` y throttling
 - Descripción: Construcción/reuso de `SKPath` por tipo; invalidaciones a máx. 60 FPS.
 - Aceptación: No hay jank visible en archivos de 10k–50k movimientos.
 - Dep: 2.1
 - Estimación: S
-- Estado: TODO
+- Estado: DONE
 
 ---
 
@@ -75,21 +75,21 @@ Fecha: 2025-08-29
 - Aceptación: Abrir archivo muestra preview; errores visibles; cancelación opera.
 - Dep: 1.2, 1.3
 - Estimación: S
-- Estado: TODO
+- Estado: DONE
 
 3.2 Integración en `MainView`/`WorkspaceView`
 - Descripción: Insertar `GCodeViewer`; bindings a `GeometryData`; Menú/toolbar `Abrir…`, `Fit`, toggles.
 - Aceptación: Flujo end-to-end funcionando.
 - Dep: 2.1, 3.1
 - Estimación: S
-- Estado: TODO
+- Estado: DONE
 
 3.3 DI y settings
 - Descripción: Registrar `IGCodePathBuilder`, `IDialogService`, `ILogger`, `ISettingsService`; añadir opciones de viewer (tolerancia, colores, grosor, grid/ejes).
 - Aceptación: Preferencias se aplican y persisten.
 - Dep: 3.2
 - Estimación: S
-- Estado: TODO
+- Estado: DONE
 
 ---
 

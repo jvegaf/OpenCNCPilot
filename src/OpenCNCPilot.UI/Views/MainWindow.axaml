@@ -136,7 +136,11 @@
                ShowOrigin="{Binding ViewerShowOrigin}"
                ShowBounds="{Binding ViewerShowBounds}"
                GridMinPixelStep="{Binding ViewerGridMinPixelStep}"
-               FlattenTolerance="{Binding ViewerFlattenTolerance}" />
+               FlattenTolerance="{Binding ViewerFlattenTolerance}"
+               RapidColorArgb="{Binding ViewerRapidColor}"
+               CutColorArgb="{Binding ViewerCutColor}"
+               RapidStrokeWidth="{Binding ViewerRapidStrokeWidth}"
+               CutStrokeWidth="{Binding ViewerCutStrokeWidth}" />
     <!-- Overlay zoom toolbar -->
     <StackPanel Orientation="Horizontal" Spacing="6" Margin="10"
                 HorizontalAlignment="Right" VerticalAlignment="Top">

@@ -48,6 +48,10 @@ public class MainWindowViewModel : ReactiveObject
     private bool _viewerShowBounds = false;
     private double _viewerGridMinPixelStep = 30.0;
     private double _viewerFlattenTolerance = 0.05;
+    private uint _viewerRapidColor = 0xFF19B4FF;
+    private uint _viewerCutColor = 0xFFFF7828;
+    private double _viewerRapidStrokeWidth = 1.2;
+    private double _viewerCutStrokeWidth = 1.6;
     private string _currentFilePath = string.Empty;
     private int _probeGridX = 5;
     private int _probeGridY = 5;
@@ -390,6 +394,30 @@ public class MainWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref _viewerFlattenTolerance, value);
     }
 
+    public uint ViewerRapidColor
+    {
+        get => _viewerRapidColor;
+        set => this.RaiseAndSetIfChanged(ref _viewerRapidColor, value);
+    }
+
+    public uint ViewerCutColor
+    {
+        get => _viewerCutColor;
+        set => this.RaiseAndSetIfChanged(ref _viewerCutColor, value);
+    }
+
+    public double ViewerRapidStrokeWidth
+    {
+        get => _viewerRapidStrokeWidth;
+        set => this.RaiseAndSetIfChanged(ref _viewerRapidStrokeWidth, value);
+    }
+
+    public double ViewerCutStrokeWidth
+    {
+        get => _viewerCutStrokeWidth;
+        set => this.RaiseAndSetIfChanged(ref _viewerCutStrokeWidth, value);
+    }
+
     public string CurrentFilePath
     {
         get => _currentFilePath;
@@ -545,6 +573,10 @@ public class MainWindowViewModel : ReactiveObject
             ViewerShowBounds = s.ViewerShowBounds;
             ViewerGridMinPixelStep = s.ViewerGridMinPixelStep;
             ViewerFlattenTolerance = s.ViewerFlattenTolerance;
+            ViewerRapidColor = s.ViewerRapidColor;
+            ViewerCutColor = s.ViewerCutColor;
+            ViewerRapidStrokeWidth = s.ViewerRapidStrokeWidth;
+            ViewerCutStrokeWidth = s.ViewerCutStrokeWidth;
         }
         catch { }
     }

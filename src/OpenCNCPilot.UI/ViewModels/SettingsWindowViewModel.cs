@@ -18,6 +18,10 @@ public class SettingsWindowViewModel : ReactiveObject
     private bool viewerShowOrigin = true;
     private bool viewerShowBounds = false;
     private double viewerGridMinPixelStep = 30.0;
+    private uint viewerRapidColor = 0xFF19B4FF; // ARGB
+    private uint viewerCutColor = 0xFFFF7828;   // ARGB
+    private double viewerRapidStrokeWidth = 1.2;
+    private double viewerCutStrokeWidth = 1.6;
 
     // Rangos recomendados
     private const double MinRotateSens = 0.05;
@@ -95,6 +99,30 @@ public class SettingsWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref viewerGridMinPixelStep, Math.Clamp(value, 4.0, 200.0));
     }
 
+    public uint ViewerRapidColor
+    {
+        get => viewerRapidColor;
+        set => this.RaiseAndSetIfChanged(ref viewerRapidColor, value);
+    }
+
+    public uint ViewerCutColor
+    {
+        get => viewerCutColor;
+        set => this.RaiseAndSetIfChanged(ref viewerCutColor, value);
+    }
+
+    public double ViewerRapidStrokeWidth
+    {
+        get => viewerRapidStrokeWidth;
+        set => this.RaiseAndSetIfChanged(ref viewerRapidStrokeWidth, Math.Clamp(value, 0.1, 10.0));
+    }
+
+    public double ViewerCutStrokeWidth
+    {
+        get => viewerCutStrokeWidth;
+        set => this.RaiseAndSetIfChanged(ref viewerCutStrokeWidth, Math.Clamp(value, 0.1, 10.0));
+    }
+
     public ReactiveCommand<Unit, Unit> SaveCommand { get; }
     public ReactiveCommand<Unit, Unit> CancelCommand { get; }
 
@@ -113,7 +141,11 @@ public class SettingsWindowViewModel : ReactiveObject
             ViewerShowGrid = ViewerShowGrid,
             ViewerShowOrigin = ViewerShowOrigin,
             ViewerShowBounds = ViewerShowBounds,
-            ViewerGridMinPixelStep = ViewerGridMinPixelStep
+            ViewerGridMinPixelStep = ViewerGridMinPixelStep,
+            ViewerRapidColor = ViewerRapidColor,
+            ViewerCutColor = ViewerCutColor,
+            ViewerRapidStrokeWidth = ViewerRapidStrokeWidth,
+            ViewerCutStrokeWidth = ViewerCutStrokeWidth
         };
         await settingsService.SaveAsync(s);
         CloseRequested?.Invoke(this, true);
@@ -137,5 +169,9 @@ public class SettingsWindowViewModel : ReactiveObject
         ViewerShowOrigin = s.ViewerShowOrigin;
         ViewerShowBounds = s.ViewerShowBounds;
         ViewerGridMinPixelStep = s.ViewerGridMinPixelStep;
+        ViewerRapidColor = s.ViewerRapidColor;
+        ViewerCutColor = s.ViewerCutColor;
+        ViewerRapidStrokeWidth = s.ViewerRapidStrokeWidth;
+        ViewerCutStrokeWidth = s.ViewerCutStrokeWidth;
     }
 }

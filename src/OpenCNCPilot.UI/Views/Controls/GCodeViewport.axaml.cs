@@ -179,6 +179,11 @@ public partial class GCodeViewport : OpenGlControlBase
         AvaloniaProperty.Register<GCodeViewport, SKColor>(nameof(RapidColor), new SKColor(25, 180, 255));
     public static readonly StyledProperty<SKColor> CutColorProperty =
         AvaloniaProperty.Register<GCodeViewport, SKColor>(nameof(CutColor), new SKColor(255, 120, 40));
+    // For XAML bindings using uint ARGB from settings, also expose UInt properties that set SKColor behind the scenes
+    public static readonly StyledProperty<uint> RapidColorArgbProperty =
+        AvaloniaProperty.Register<GCodeViewport, uint>(nameof(RapidColorArgb), 0xFF19B4FF);
+    public static readonly StyledProperty<uint> CutColorArgbProperty =
+        AvaloniaProperty.Register<GCodeViewport, uint>(nameof(CutColorArgb), 0xFFFF7828);
     public static readonly StyledProperty<double> RapidStrokeWidthProperty =
         AvaloniaProperty.Register<GCodeViewport, double>(nameof(RapidStrokeWidth), 1.2);
     public static readonly StyledProperty<double> CutStrokeWidthProperty =
@@ -186,6 +191,8 @@ public partial class GCodeViewport : OpenGlControlBase
 
     public SKColor RapidColor { get => GetValue(RapidColorProperty); set => SetValue(RapidColorProperty, value); }
     public SKColor CutColor { get => GetValue(CutColorProperty); set => SetValue(CutColorProperty, value); }
+    public uint RapidColorArgb { get => GetValue(RapidColorArgbProperty); set => SetValue(RapidColorArgbProperty, value); }
+    public uint CutColorArgb { get => GetValue(CutColorArgbProperty); set => SetValue(CutColorArgbProperty, value); }
     public double RapidStrokeWidth { get => GetValue(RapidStrokeWidthProperty); set => SetValue(RapidStrokeWidthProperty, value); }
     public double CutStrokeWidth { get => GetValue(CutStrokeWidthProperty); set => SetValue(CutStrokeWidthProperty, value); }
 
@@ -493,7 +500,9 @@ public partial class GCodeViewport : OpenGlControlBase
             change.Property == RapidColorProperty ||
             change.Property == CutColorProperty ||
             change.Property == RapidStrokeWidthProperty ||
-            change.Property == CutStrokeWidthProperty)
+            change.Property == CutStrokeWidthProperty ||
+            change.Property == RapidColorArgbProperty ||
+            change.Property == CutColorArgbProperty)
         {
             if (change.Property == CommandsProperty || change.Property == GeometryProperty || change.Property == FitRequestIdProperty)
             {
@@ -504,6 +513,16 @@ public partial class GCodeViewport : OpenGlControlBase
             else if (change.Property == ZoomProperty || change.Property == RotationXProperty || change.Property == RotationYProperty || change.Property == PanXProperty || change.Property == PanYProperty || change.Property == FlattenToleranceProperty)
             {
                 InvalidateSkPathCache();
+            }
+            else if (change.Property == RapidColorArgbProperty)
+            {
+                var c = GetValue(RapidColorArgbProperty);
+                RapidColor = new SKColor((byte)((c >> 16) & 0xFF), (byte)((c >> 8) & 0xFF), (byte)(c & 0xFF), (byte)((c >> 24) & 0xFF));
+            }
+            else if (change.Property == CutColorArgbProperty)
+            {
+                var c = GetValue(CutColorArgbProperty);
+                CutColor = new SKColor((byte)((c >> 16) & 0xFF), (byte)((c >> 8) & 0xFF), (byte)(c & 0xFF), (byte)((c >> 24) & 0xFF));
             }
             CoalesceRenderRequest();
         }
