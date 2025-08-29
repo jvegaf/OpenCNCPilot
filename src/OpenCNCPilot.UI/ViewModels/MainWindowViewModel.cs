@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using OpenCNCPilot.Core.GCode;
@@ -161,6 +162,16 @@ public class MainWindowViewModel : ReactiveObject
             }
         });
 
+        // Sync viewport with File tab parsed commands
+        this.WhenAnyValue(x => x.FileTab.ParsedCommands)
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(cmds =>
+            {
+                GCodeCommands = cmds;
+                // Disparar autofit tanto al abrir como al limpiar
+                FitRequestId++;
+            });
+
         // Viewer controls
         FitToViewCommand = ReactiveCommand.Create(() => { FitRequestId++; });
         ZoomInCommand = ReactiveCommand.Create(() => { ViewerZoom = Math.Max(1e-6, ViewerZoom * 0.8); });
@@ -208,63 +219,17 @@ public class MainWindowViewModel : ReactiveObject
             await ShowParseWarningsAsync(sample);
         });
 
-        // Load G-Code command: pick file, update last directory, parse con Core y mostrar warnings
+        // Delegate to FileTab.OpenCommand so there is a single source of truth
         LoadGCodeFileCommand = ReactiveCommand.CreateFromTask(async () =>
         {
-            var settings = await _settingsService.LoadAsync();
-            var filters = new[] { "G-Code (*.gcode;*.nc;*.ngc)|*.gcode;*.nc;*.ngc", "All Files (*.*)|*.*" };
-            var files = await _dialogService.OpenFilesAsync("Open G-Code", settings.LastGCodeDirectory, filters, allowMultiple: false);
-            if (files == null || files.Length == 0)
-                return;
-
-            var file = files[0];
-            try
-            {
-                var dir = Path.GetDirectoryName(file);
-                if (!string.IsNullOrEmpty(dir))
-                {
-                    settings.LastGCodeDirectory = dir!;
-                    await _settingsService.SaveAsync(settings);
-                }
-
-                var lines = await System.IO.File.ReadAllLinesAsync(file);
-                try
-                {
-                    _gcodeParser.IgnoreAdditionalAxes = settings.IgnoreAdditionalAxes;
-                    _gcodeParser.Parse(lines);
-                }
-                catch (ParseException pex)
-                {
-                    _logger.LogWarning(pex, "GCode parse error");
-                    await _dialogService.AlertAsync("Parse Error", pex.Message);
-                    return;
-                }
-
-                if (_gcodeParser.Warnings.Count > 0)
-                    await ShowParseWarningsAsync(_gcodeParser.Warnings);
-
-                // Exponer comandos parseados a la vista (snapshot de solo lectura)
-                var list = new ObservableCollection<Command>(_gcodeParser.Commands);
-                GCodeCommands = new ReadOnlyObservableCollection<Command>(list);
-                CurrentFilePath = file;
-                this.RaisePropertyChanged(nameof(GCodeCommandCount));
-                this.RaisePropertyChanged(nameof(CurrentFileName));
-
-                _logger.LogInformation("Loaded G-Code file: {File}", file);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to load G-Code file: {File}", file);
-                await _dialogService.AlertAsync("Error", $"Could not load G-Code file.\n{ex.Message}");
-            }
+            await FileTab.OpenCommand.Execute()
+                .Catch(Observable.Empty<Unit>())
+                .ToTask();
         });
 
         ClearGCodeFileCommand = ReactiveCommand.Create(() =>
         {
-            GCodeCommands = null;
-            CurrentFilePath = string.Empty;
-            this.RaisePropertyChanged(nameof(GCodeCommandCount));
-            this.RaisePropertyChanged(nameof(CurrentFileName));
+            FileTab.ClearCommand.Execute().Subscribe();
         });
 
         StartProbeCommand = ReactiveCommand.CreateFromTask(async () =>

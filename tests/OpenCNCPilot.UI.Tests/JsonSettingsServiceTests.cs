@@ -14,6 +14,7 @@ public class JsonSettingsServiceTests
         var s = await svc.LoadAsync();
         s.BaudRate.Should().Be(115200);
         s.DefaultComPort.Should().NotBeNull();
+        s.PauseFileOnHold.Should().BeFalse();
     }
 
     [Fact]
@@ -26,6 +27,7 @@ public class JsonSettingsServiceTests
             DefaultComPort = "ttyUSB0",
             BaudRate = 250000,
             LastGCodeDirectory = "/tmp",
+            PauseFileOnHold = true,
             ViewerRotateSensitivity = 0.4,
             ViewerPanSensitivity = 0.05,
             ViewerZoomStepFactor = 1.2,
@@ -39,6 +41,7 @@ public class JsonSettingsServiceTests
         loaded.DefaultComPort.Should().Be("ttyUSB0");
         loaded.BaudRate.Should().Be(250000);
         loaded.LastGCodeDirectory.Should().Be("/tmp");
+        loaded.PauseFileOnHold.Should().BeTrue();
         loaded.ViewerRotateSensitivity.Should().Be(0.4);
         loaded.ViewerPanSensitivity.Should().Be(0.05);
         loaded.ViewerZoomStepFactor.Should().Be(1.2);

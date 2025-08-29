@@ -66,6 +66,7 @@ OpenCNCPilot se estructura en tres capas principales siguiendo principios de mod
 - Servicios de UI (`UI/Services/*`):
   - `IDialogService`: alertas, confirmaciones, open/save, warnings, prompt de números.
   - `ISettingsService`: persistencia JSON de `AppSettings` (ej. `LastGCodeDirectory`, `IgnoreAdditionalAxes`).
+  - `IGCodeSender`: ver `docs/IGCodeSender.md` para contrato y estados.
 
 ### DI y Configuración
 - Registro de servicios en `App.axaml.cs` usando `ServiceCollection`.

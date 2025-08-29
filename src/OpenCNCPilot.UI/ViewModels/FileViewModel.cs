@@ -7,6 +7,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using OpenCNCPilot.Core.GCode;
+using OpenCNCPilot.Core.GCode.GCodeCommands;
 using OpenCNCPilot.Hardware.Services;
 using OpenCNCPilot.UI.Services;
 using ReactiveUI;
@@ -30,6 +31,7 @@ public class FileViewModel : ReactiveObject
     private bool _pauseOnHold;
 
     public ObservableCollection<string> GCodeLines { get; } = new();
+    private ReadOnlyObservableCollection<Command>? _parsedCommands;
 
     public string CurrentFileName { get => _currentFileName; private set => this.RaiseAndSetIfChanged(ref _currentFileName, value); }
     public int FilePosition { get => _filePosition; private set => this.RaiseAndSetIfChanged(ref _filePosition, value); }
@@ -37,6 +39,11 @@ public class FileViewModel : ReactiveObject
     public TimeSpan Runtime { get => _runtime; private set => this.RaiseAndSetIfChanged(ref _runtime, value); }
     public TimeSpan EstimatedDuration { get => _estimated; private set => this.RaiseAndSetIfChanged(ref _estimated, value); }
     public bool IsBusy { get => _isBusy; private set => this.RaiseAndSetIfChanged(ref _isBusy, value); }
+    public ReadOnlyObservableCollection<Command>? ParsedCommands
+    {
+        get => _parsedCommands;
+        private set => this.RaiseAndSetIfChanged(ref _parsedCommands, value);
+    }
     public bool PauseOnHold
     {
         get => _pauseOnHold;
@@ -120,15 +127,27 @@ public class FileViewModel : ReactiveObject
         catch (ParseException pex)
         {
             _logger.LogWarning(pex, "GCode parse error");
+            await _dialogs.AlertAsync("Parse Error", pex.Message);
+            return;
+        }
+
+        if (_parser.Warnings.Count > 0)
+        {
+            const string header = "Warning! Parsing this file resulted in some warnings!\n\nDo not use OpenCNCPilot's edit functions unless you are sure that these warnings can be ignored!\n\nBe aware that the affected lines will likely move when using edit functions.";
+            await _dialogs.ShowWarningsAsync(header, _parser.Warnings);
         }
 
         // Popular colecciones
         GCodeLines.Clear();
         foreach (var l in lines) GCodeLines.Add(l);
-        _sender.Load(lines);
+    _sender.Load(lines);
         UpdateFromSender();
 
         CurrentFileName = Path.GetFileName(file);
+
+    // Snapshot de comandos parseados (para el viewport)
+    var cmdList = new ObservableCollection<Command>(_parser.Commands);
+    ParsedCommands = new ReadOnlyObservableCollection<Command>(cmdList);
         var dir = Path.GetDirectoryName(file);
         if (!string.IsNullOrEmpty(dir))
         {
@@ -157,6 +176,7 @@ public class FileViewModel : ReactiveObject
     {
         _sender.Clear();
         GCodeLines.Clear();
+        ParsedCommands = null;
         UpdateFromSender();
         CurrentFileName = string.Empty;
     }

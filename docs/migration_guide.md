@@ -102,6 +102,41 @@ using Avalonia.Controls;
 - Paquetes del sistema: puede requerir `libgl1`, `libx11-6` u otros para render.
 - Tests de UI: evitar acceso a GL; probar ViewModels y bindings.
 
+## Migración de la pestaña “File” (WPF → Avalonia)
+
+- Patrón MVVM con ReactiveUI:
+  - ViewModel: `FileViewModel` hereda de `ReactiveObject`, comandos con `ReactiveCommand` (`Open/Save/Clear/Start/Pause/Goto`).
+  - Estados derivados (habilitación/deshabilitación) a partir de `IGCodeSender.IsSending` y `FileLength`.
+  - Persistencia con `ISettingsService` (JSON) para `LastGCodeDirectory` y `PauseFileOnHold`.
+
+- Vista (`FilePanel.axaml`):
+  - `ListBox ItemsSource="{Binding GCodeLines}" SelectedIndex="{Binding FilePosition}"`.
+  - Evitar propiedades WPF no soportadas en Avalonia como `IsVirtualizing`, `VirtualizationMode` o `Items` (usar `ItemsSource`). Avalonia 11 ya virtualiza por defecto con su panel de items.
+  - Botones enlazados a `ReactiveCommand` y `CheckBox` a `PauseOnHold`.
+
+- Integración con `MainWindowViewModel`:
+  - `MainWindowViewModel` expone `FileTab: FileViewModel` y utiliza `this.WhenAnyValue(x => x.FileTab.ParsedCommands)` para propagar a `GCodeViewport` y disparar `FitRequestId++` tras abrir/limpiar.
+  - Evitar suscripciones a propiedades constantes en `WhenAnyValue` (causa `Unsupported expression of type 'Constant'`).
+
+- Diálogos (`IDialogService`):
+  - Firmas relevantes en Avalonia:
+    - `Task<string[]?> OpenFilesAsync(string title, string? initialDirectory = null, string[]? filters = null, bool allowMultiple = false)`
+    - `Task<string?> SaveFileAsync(string title, string? initialDirectory = null, string? defaultFileName = null, string[]? filters = null)`
+    - `Task<string?> PickFolderAsync(string title, string? initialDirectory = null)`
+    - `Task AlertAsync(string title, string message, string okText = "OK")`
+    - `Task<bool> ConfirmAsync(string title, string message, string confirmText = "OK", string cancelText = "Cancel")`
+    - `Task<double?> PromptNumberAsync(string title, string message, double? defaultValue = null, double? min = null, double? max = null, int decimals = 3)`
+  - En tests, los dummies deben implementar exactamente estas firmas para compilar.
+
+- Sender de G‑Code (`IGCodeSender`):
+  - Protocolo una‑línea‑en‑vuelo, eventos `StateChanged`, `PositionChanged`, `ErrorOccurred`.
+  - `PauseOnHold` tras `ok` si la línea contenía `M0/M1/M30`.
+  - `Goto` permitido sólo en `Idle/Paused`.
+
+- Troubleshooting XAML:
+  - Si aparecen errores de propiedades WPF en `ListBox`, limpiar artefactos (`bin/obj`) y verificar que no se usan props no soportadas.
+  - Mensajes típicos: "Unable to resolve property IsVirtualizing / VirtualizationMode" o "setter/adder for property Items"; solución: usar `ItemsSource` y confiar en la virtualización por defecto.
+
 ## Dependencias Platform-Specific
 
 ### System.IO.Ports
