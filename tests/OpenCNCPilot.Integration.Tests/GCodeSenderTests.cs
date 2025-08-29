@@ -45,7 +45,7 @@ public class GCodeSenderTests
         sender.Start();
 
         // Esperar a que termine
-        await Eventually(async () => sender.State == GCodeSenderState.Idle && sender.FilePosition == 3, TimeSpan.FromSeconds(1));
+    await Eventually(() => sender.State == GCodeSenderState.Idle && sender.FilePosition == 3, TimeSpan.FromSeconds(1));
 
         sender.State.Should().Be(GCodeSenderState.Idle);
         sender.FilePosition.Should().Be(3);
@@ -79,7 +79,7 @@ public class GCodeSenderTests
         sender.Load(new[] { "G0 X0", "M0", "G1 X2" });
 
         sender.Start();
-        await Eventually(async () => sender.State == GCodeSenderState.Paused && sender.FilePosition == 1, TimeSpan.FromSeconds(1));
+    await Eventually(() => sender.State == GCodeSenderState.Paused && sender.FilePosition == 1, TimeSpan.FromSeconds(1));
 
         sender.State.Should().Be(GCodeSenderState.Paused);
         sender.FilePosition.Should().Be(1); // se pausa tras completar la línea 0 y detectar M0 en la actual
@@ -96,7 +96,7 @@ public class GCodeSenderTests
         sender.ErrorOccurred += (_, msg) => error = msg;
         sender.Start();
 
-        await Eventually(async () => sender.State == GCodeSenderState.Paused, TimeSpan.FromSeconds(1));
+    await Eventually(() => sender.State == GCodeSenderState.Paused, TimeSpan.FromSeconds(1));
         error.Should().NotBeNull();
         sender.FilePosition.Should().Be(1); // no avanzó al 2
     }
@@ -153,12 +153,12 @@ public class GCodeSenderTests
         public void ClearOutputBuffer() { }
     }
 
-    private static async Task Eventually(Func<Task<bool>> condition, TimeSpan timeout)
+    private static async Task Eventually(Func<bool> condition, TimeSpan timeout)
     {
         var start = DateTime.UtcNow;
         while (DateTime.UtcNow - start < timeout)
         {
-            if (await condition()) return;
+            if (condition()) return;
             await Task.Delay(10);
         }
         throw new TimeoutException("Condition not met in time");

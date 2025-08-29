@@ -22,5 +22,6 @@ public class AppSettings
     public bool ViewerShowOrigin { get; set; } = true;
     public bool ViewerShowBounds { get; set; } = false;
     public double ViewerGridMinPixelStep { get; set; } = 30.0;
+    public double ViewerFlattenTolerance { get; set; } = 0.05;
 }
 

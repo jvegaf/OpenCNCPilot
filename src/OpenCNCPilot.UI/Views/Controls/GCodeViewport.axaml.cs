@@ -7,6 +7,7 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using OpenCNCPilot.Core.GCode.GCodeCommands;
 using SkiaSharp;
+using OpenCNCPilot.Core.Geometry;
 
 namespace OpenCNCPilot.UI.Views.Controls;
 
@@ -14,6 +15,8 @@ public partial class GCodeViewport : OpenGlControlBase
 {
     private GRGlInterface? _skiaGl;
     private GRContext? _skiaContext;
+    private readonly DispatcherTimer _renderTimer;
+    private bool _renderInvalidated;
     /// <summary>
     /// Logical scale for XY projection. Interpreted as millimeters per half-screen unit
     /// (i.e., smaller values zoom in, larger values zoom out). Defaults to 1.0.
@@ -88,6 +91,28 @@ public partial class GCodeViewport : OpenGlControlBase
         set => SetValue(FitRequestIdProperty, value);
     }
 
+    // New geometry-based pipeline
+    public static readonly StyledProperty<GeometryData?> GeometryProperty =
+        AvaloniaProperty.Register<GCodeViewport, GeometryData?>(nameof(Geometry));
+    public GeometryData? Geometry
+    {
+        get => GetValue(GeometryProperty);
+        set => SetValue(GeometryProperty, value);
+    }
+
+    public static readonly StyledProperty<double> FlattenToleranceProperty =
+        AvaloniaProperty.Register<GCodeViewport, double>(nameof(FlattenTolerance), 0.05);
+    public double FlattenTolerance
+    {
+        get => GetValue(FlattenToleranceProperty);
+        set => SetValue(FlattenToleranceProperty, value);
+    }
+
+    private List<List<Vector3>>? _cachedRapidPaths;
+    private List<List<Vector3>>? _cachedCutPaths;
+    private GeometryData? _cachedGeometrySource;
+    private double _cachedTolerance;
+
     private Point? _lastPointer;
     private bool _isRotating;
     private bool _isPanning;
@@ -149,16 +174,36 @@ public partial class GCodeViewport : OpenGlControlBase
         set => SetValue(GridMinPixelStepProperty, value);
     }
 
+    // Stroke appearance (exposed for future settings binding)
+    public static readonly StyledProperty<SKColor> RapidColorProperty =
+        AvaloniaProperty.Register<GCodeViewport, SKColor>(nameof(RapidColor), new SKColor(25, 180, 255));
+    public static readonly StyledProperty<SKColor> CutColorProperty =
+        AvaloniaProperty.Register<GCodeViewport, SKColor>(nameof(CutColor), new SKColor(255, 120, 40));
+    public static readonly StyledProperty<double> RapidStrokeWidthProperty =
+        AvaloniaProperty.Register<GCodeViewport, double>(nameof(RapidStrokeWidth), 1.2);
+    public static readonly StyledProperty<double> CutStrokeWidthProperty =
+        AvaloniaProperty.Register<GCodeViewport, double>(nameof(CutStrokeWidth), 1.6);
+
+    public SKColor RapidColor { get => GetValue(RapidColorProperty); set => SetValue(RapidColorProperty, value); }
+    public SKColor CutColor { get => GetValue(CutColorProperty); set => SetValue(CutColorProperty, value); }
+    public double RapidStrokeWidth { get => GetValue(RapidStrokeWidthProperty); set => SetValue(RapidStrokeWidthProperty, value); }
+    public double CutStrokeWidth { get => GetValue(CutStrokeWidthProperty); set => SetValue(CutStrokeWidthProperty, value); }
+
     private void AutoFit()
     {
-        if (Commands is null || Commands.Count == 0)
-            return;
         int width = Math.Max(1, (int)Bounds.Width);
         int height = Math.Max(1, (int)Bounds.Height);
-        var (zoom, panX, panY) = ViewportAutoFit.Compute(Commands, width, height, RotationX, RotationY);
-        Zoom = zoom;
-        PanX = panX;
-        PanY = panY;
+        if (Geometry is not null)
+        {
+            var cmds = BuildPseudoCommandsFromGeometry(Geometry);
+            var (zoom, panX, panY) = ViewportAutoFit.Compute(cmds, width, height, RotationX, RotationY);
+            Zoom = zoom; PanX = panX; PanY = panY;
+            return;
+        }
+
+        if (Commands is null || Commands.Count == 0) return;
+        var (zoom2, panX2, panY2) = ViewportAutoFit.Compute(Commands, width, height, RotationX, RotationY);
+        Zoom = zoom2; PanX = panX2; PanY = panY2;
     }
 
     protected override void OnOpenGlInit(GlInterface gl)
@@ -174,6 +219,23 @@ public partial class GCodeViewport : OpenGlControlBase
         {
             // In headless/CI environments, GL might be unavailable
         }
+    }
+
+    public GCodeViewport()
+    {
+        // Coalesce render requests to ~60 FPS max
+        _renderTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(16)
+        };
+        _renderTimer.Tick += (_, __) =>
+        {
+            if (_renderInvalidated)
+            {
+                _renderInvalidated = false;
+                RequestNextFrameRendering();
+            }
+        };
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -284,9 +346,22 @@ public partial class GCodeViewport : OpenGlControlBase
             }
 
             // Toolpath lines (XY projection)
-            if (Commands is { Count: > 0 })
+            if (Geometry is not null)
             {
-                using var pathPaint = new SKPaint { IsAntialias = true, Color = new SKColor(25, 180, 255), StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke };
+                EnsureFlattenCache();
+                double scale = Math.Max(1e-6, Zoom);
+                EnsureSkPathCache(width, height, scale);
+                using var rapidPaint = new SKPaint { IsAntialias = true, Color = RapidColor, StrokeWidth = (float)RapidStrokeWidth, Style = SKPaintStyle.Stroke };
+                using var cutPaint = new SKPaint { IsAntialias = true, Color = CutColor, StrokeWidth = (float)CutStrokeWidth, Style = SKPaintStyle.Stroke };
+
+                if (_cachedRapidPathSk is not null)
+                    canvas.DrawPath(_cachedRapidPathSk, rapidPaint);
+                if (_cachedCutPathSk is not null)
+                    canvas.DrawPath(_cachedCutPathSk, cutPaint);
+            }
+            else if (Commands is { Count: > 0 })
+            {
+                using var pathPaint = new SKPaint { IsAntialias = true, Color = RapidColor, StrokeWidth = (float)Math.Max(RapidStrokeWidth, CutStrokeWidth), Style = SKPaintStyle.Stroke };
                 double scale = Math.Max(1e-6, Zoom);
                 foreach (var cmd in Commands)
                 {
@@ -364,9 +439,13 @@ public partial class GCodeViewport : OpenGlControlBase
             }
 
             // Bounds (optional)
-            if (ShowBounds && Commands is { Count: > 0 })
+            if (ShowBounds && (Geometry is not null || (Commands is { Count: > 0 })))
             {
-                if (ViewportAutoFit.TryComputeBounds(Commands, out var minX, out var minY, out var maxX, out var maxY))
+                IReadOnlyList<Command>? cmds = Commands;
+                if (Geometry is not null)
+                    cmds = BuildPseudoCommandsFromGeometry(Geometry);
+
+                if (cmds is not null && ViewportAutoFit.TryComputeBounds(cmds, out var minX, out var minY, out var maxX, out var maxY))
                 {
                     using var boundsPaint = new SKPaint { IsAntialias = true, Color = new SKColor(255, 215, 0, 140), StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke };
                     double scale = Math.Max(1e-6, Zoom);
@@ -389,34 +468,196 @@ public partial class GCodeViewport : OpenGlControlBase
         {
             // Ignore render errors to avoid crashing UI in early PoC
         }
-        finally
-        {
-            // Request another frame for smooth updates during interactions
-            Dispatcher.UIThread.Post(RequestNextFrameRendering);
-        }
+        finally { }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
         if (change.Property == CommandsProperty ||
+            change.Property == GeometryProperty ||
             change.Property == ZoomProperty ||
             change.Property == RotationXProperty ||
             change.Property == RotationYProperty ||
             change.Property == FitRequestIdProperty ||
             change.Property == PanXProperty ||
             change.Property == PanYProperty ||
+            change.Property == FlattenToleranceProperty ||
             change.Property == RotateSensitivityProperty ||
             change.Property == PanSensitivityProperty ||
             change.Property == ZoomStepFactorProperty ||
             change.Property == ShowGridProperty ||
             change.Property == ShowOriginProperty ||
             change.Property == ShowBoundsProperty ||
-            change.Property == GridMinPixelStepProperty)
+            change.Property == GridMinPixelStepProperty ||
+            change.Property == RapidColorProperty ||
+            change.Property == CutColorProperty ||
+            change.Property == RapidStrokeWidthProperty ||
+            change.Property == CutStrokeWidthProperty)
         {
-            if (change.Property == CommandsProperty || change.Property == FitRequestIdProperty)
+            if (change.Property == CommandsProperty || change.Property == GeometryProperty || change.Property == FitRequestIdProperty)
+            {
+                InvalidateFlattenCache();
+                InvalidateSkPathCache();
                 AutoFit();
-            RequestNextFrameRendering();
+            }
+            else if (change.Property == ZoomProperty || change.Property == RotationXProperty || change.Property == RotationYProperty || change.Property == PanXProperty || change.Property == PanYProperty || change.Property == FlattenToleranceProperty)
+            {
+                InvalidateSkPathCache();
+            }
+            CoalesceRenderRequest();
         }
+    }
+
+    private void InvalidateFlattenCache()
+    {
+        _cachedRapidPaths = null;
+        _cachedCutPaths = null;
+        _cachedGeometrySource = null;
+        _cachedTolerance = 0;
+    }
+
+    private void EnsureFlattenCache()
+    {
+        if (Geometry is null) { InvalidateFlattenCache(); return; }
+        if (_cachedRapidPaths != null && ReferenceEquals(_cachedGeometrySource, Geometry) && Math.Abs(_cachedTolerance - FlattenTolerance) < 1e-12)
+            return;
+        var (rapids, cuts) = SegmentFlattener.Flatten(Geometry, FlattenTolerance);
+        _cachedRapidPaths = rapids;
+        _cachedCutPaths = cuts;
+        _cachedGeometrySource = Geometry;
+        _cachedTolerance = FlattenTolerance;
+        InvalidateSkPathCache();
+    }
+
+    private void DrawPolylinePaths(SKCanvas canvas, int width, int height, List<List<Vector3>>? paths, double scale, SKPaint paint)
+    {
+        if (paths is null) return;
+        float hw = width / 2f, hh = height / 2f;
+        foreach (var path in paths)
+        {
+            if (path.Count < 2) continue;
+            var prev = path[0];
+            for (int i = 1; i < path.Count; i++)
+            {
+                var cur = path[i];
+                var (vx1, vy1) = ViewportMath.TransformWorldToView(prev.X, prev.Y, prev.Z, RotationX, RotationY, PanX, PanY);
+                var (vx2, vy2) = ViewportMath.TransformWorldToView(cur.X, cur.Y, cur.Z, RotationX, RotationY, PanX, PanY);
+                float sx1 = hw + (float)(vx1 / scale);
+                float sy1 = hh - (float)(vy1 / scale);
+                float sx2 = hw + (float)(vx2 / scale);
+                float sy2 = hh - (float)(vy2 / scale);
+                canvas.DrawLine(sx1, sy1, sx2, sy2, paint);
+                prev = cur;
+            }
+        }
+    }
+
+    // SKPath cache in screen coordinates to reduce draw calls
+    private SKPath? _cachedRapidPathSk;
+    private SKPath? _cachedCutPathSk;
+    private GeometryData? _skPathGeometrySource;
+    private double _skPathTol, _skPathZoom, _skPathRx, _skPathRy, _skPathPanX, _skPathPanY;
+    private int _skPathWidth, _skPathHeight;
+
+    private void InvalidateSkPathCache()
+    {
+        _cachedRapidPathSk?.Dispose();
+        _cachedCutPathSk?.Dispose();
+        _cachedRapidPathSk = null;
+        _cachedCutPathSk = null;
+        _skPathGeometrySource = null;
+        _skPathWidth = _skPathHeight = 0;
+    }
+
+    private void EnsureSkPathCache(int width, int height, double scale)
+    {
+        if (Geometry is null || _cachedRapidPaths is null || _cachedCutPaths is null)
+        {
+            InvalidateSkPathCache();
+            return;
+        }
+        if (_cachedRapidPathSk != null &&
+            ReferenceEquals(_skPathGeometrySource, Geometry) &&
+            Math.Abs(_skPathTol - FlattenTolerance) < 1e-12 &&
+            Math.Abs(_skPathZoom - Zoom) < 1e-12 &&
+            Math.Abs(_skPathRx - RotationX) < 1e-12 &&
+            Math.Abs(_skPathRy - RotationY) < 1e-12 &&
+            Math.Abs(_skPathPanX - PanX) < 1e-12 &&
+            Math.Abs(_skPathPanY - PanY) < 1e-12 &&
+            _skPathWidth == width && _skPathHeight == height)
+        {
+            return;
+        }
+
+        InvalidateSkPathCache();
+        float hw = width / 2f, hh = height / 2f;
+        _cachedRapidPathSk = new SKPath();
+        foreach (var path in _cachedRapidPaths)
+        {
+            if (path.Count < 2) continue;
+            var prev = path[0];
+            var (vx1, vy1) = ViewportMath.TransformWorldToView(prev.X, prev.Y, prev.Z, RotationX, RotationY, PanX, PanY);
+            float sx1 = hw + (float)(vx1 / scale);
+            float sy1 = hh - (float)(vy1 / scale);
+            _cachedRapidPathSk.MoveTo(sx1, sy1);
+            for (int i = 1; i < path.Count; i++)
+            {
+                var cur = path[i];
+                var (vx2, vy2) = ViewportMath.TransformWorldToView(cur.X, cur.Y, cur.Z, RotationX, RotationY, PanX, PanY);
+                float sx2 = hw + (float)(vx2 / scale);
+                float sy2 = hh - (float)(vy2 / scale);
+                _cachedRapidPathSk.LineTo(sx2, sy2);
+            }
+        }
+        _cachedCutPathSk = new SKPath();
+        foreach (var path in _cachedCutPaths)
+        {
+            if (path.Count < 2) continue;
+            var prev = path[0];
+            var (vx1, vy1) = ViewportMath.TransformWorldToView(prev.X, prev.Y, prev.Z, RotationX, RotationY, PanX, PanY);
+            float sx1 = hw + (float)(vx1 / scale);
+            float sy1 = hh - (float)(vy1 / scale);
+            _cachedCutPathSk.MoveTo(sx1, sy1);
+            for (int i = 1; i < path.Count; i++)
+            {
+                var cur = path[i];
+                var (vx2, vy2) = ViewportMath.TransformWorldToView(cur.X, cur.Y, cur.Z, RotationX, RotationY, PanX, PanY);
+                float sx2 = hw + (float)(vx2 / scale);
+                float sy2 = hh - (float)(vy2 / scale);
+                _cachedCutPathSk.LineTo(sx2, sy2);
+            }
+        }
+
+        _skPathGeometrySource = Geometry;
+        _skPathTol = FlattenTolerance;
+        _skPathZoom = Zoom;
+        _skPathRx = RotationX;
+        _skPathRy = RotationY;
+        _skPathPanX = PanX;
+        _skPathPanY = PanY;
+        _skPathWidth = width;
+        _skPathHeight = height;
+    }
+
+    private void CoalesceRenderRequest()
+    {
+        _renderInvalidated = true;
+        if (!_renderTimer.IsEnabled)
+            _renderTimer.Start();
+    }
+    private static IReadOnlyList<Command> BuildPseudoCommandsFromGeometry(GeometryData geometry)
+    {
+        // Build lightweight pseudo-commands for bounds/fit reuse
+        var list = new List<Command>(geometry.Lines.Count + geometry.Arcs.Count);
+        foreach (var l in geometry.Lines)
+        {
+            list.Add(new Line { Start = l.Start, End = l.End, Feed = 0, Rapid = l.Type == MovementType.Rapid, StartValid = true, PositionValid = new[] { true, true, true } });
+        }
+        foreach (var a in geometry.Arcs)
+        {
+            list.Add(new Arc { Start = a.Start, End = a.End, Feed = 0, Direction = a.Direction, Plane = a.Plane, U = a.U, V = a.V });
+        }
+        return list;
     }
 }

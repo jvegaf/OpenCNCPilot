@@ -19,7 +19,9 @@ public class MainWindowViewModel_GrblSettingsTests
     private class DummySerial : ISerialPortService
     {
         public event EventHandler<string>? DataReceived;
-        public event EventHandler<bool>? ConnectionStateChanged;
+    #pragma warning disable CS0067
+    public event EventHandler<bool>? ConnectionStateChanged;
+    #pragma warning restore CS0067
         public bool IsOpen { get; set; } = true;
         public string? PortName => "COM1";
         public int BaudRate => 115200;

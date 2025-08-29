@@ -38,9 +38,11 @@ public class FileViewModel_CommandEnablementTests
         public bool PauseOnHold { get; set; }
         public bool IsSending => State == GCodeSenderState.Sending;
         public string CurrentLineText => string.Empty;
-        public event EventHandler<GCodeSenderState>? StateChanged;
-        public event EventHandler<int>? PositionChanged;
-        public event EventHandler<string>? ErrorOccurred;
+    #pragma warning disable CS0067
+    public event EventHandler<GCodeSenderState>? StateChanged;
+    public event EventHandler<int>? PositionChanged;
+    public event EventHandler<string>? ErrorOccurred;
+    #pragma warning restore CS0067
         public void Dispose() { }
         public void Load(System.Collections.Generic.IEnumerable<string> lines)
         {
@@ -60,7 +62,7 @@ public class FileViewModel_CommandEnablementTests
 
     private sealed class DummyDialogs : IDialogService
     {
-        public string[]? NextOpenFiles;
+        public string[]? NextOpenFiles = null;
         public System.Collections.Generic.List<string> LastWarnings { get; } = new();
         public System.Threading.Tasks.Task<string[]?> OpenFilesAsync(string title, string? initialDirectory = null, string[]? filters = null, bool allowMultiple = false) => System.Threading.Tasks.Task.FromResult(NextOpenFiles);
         public System.Threading.Tasks.Task<string?> SaveFileAsync(string title, string? initialDirectory = null, string? defaultFileName = null, string[]? filters = null) => System.Threading.Tasks.Task.FromResult<string?>(null);
@@ -87,7 +89,7 @@ public class FileViewModel_CommandEnablementTests
         var sender = new ToggleSender();
         var dialogs = new DummyDialogs();
         var settings = new InMemorySettings();
-        var vm = new FileViewModel(NullLogger<FileViewModel>.Instance, parser, sender, dialogs, settings);
+        var vm = new FileViewModel(NullLogger<FileViewModel>.Instance, parser, sender, dialogs, settings, new OpenCNCPilot.Core.GCode.GCodePathBuilder());
 
         // Cargar un archivo virtual para habilitar Start/Save
         sender.Load(new[] { "G0 X0", "G1 X1" });

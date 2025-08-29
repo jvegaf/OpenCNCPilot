@@ -30,7 +30,7 @@ public class SettingsWindowViewModel : ReactiveObject
     public SettingsWindowViewModel(ISettingsService settingsService)
     {
         this.settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
-        SaveCommand = ReactiveCommand.Create(Save);
+        SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
         CancelCommand = ReactiveCommand.Create(Cancel);
         _ = Load();
     }
@@ -100,7 +100,7 @@ public class SettingsWindowViewModel : ReactiveObject
 
     public event EventHandler<bool>? CloseRequested;
 
-    private async void Save()
+    private async System.Threading.Tasks.Task SaveAsync()
     {
         var s = new AppSettings
         {

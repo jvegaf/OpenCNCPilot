@@ -122,6 +122,7 @@
       BorderThickness="1" CornerRadius="5">
   <Grid>
   <controls:GCodeViewport Commands="{Binding GCodeCommands}"
+               Geometry="{Binding FileTab.GeometryData}"
                Zoom="{Binding ViewerZoom}"
                RotationX="{Binding ViewerRotationX}"
                RotationY="{Binding ViewerRotationY}"
@@ -134,7 +135,8 @@
                ShowGrid="{Binding ViewerShowGrid}"
                ShowOrigin="{Binding ViewerShowOrigin}"
                ShowBounds="{Binding ViewerShowBounds}"
-               GridMinPixelStep="{Binding ViewerGridMinPixelStep}" />
+               GridMinPixelStep="{Binding ViewerGridMinPixelStep}"
+               FlattenTolerance="{Binding ViewerFlattenTolerance}" />
     <!-- Overlay zoom toolbar -->
     <StackPanel Orientation="Horizontal" Spacing="6" Margin="10"
                 HorizontalAlignment="Right" VerticalAlignment="Top">
@@ -165,6 +167,12 @@
         <ac:NumericUpDown Value="{Binding ViewerGridMinPixelStep}"
                            Minimum="4" Maximum="200" Increment="2" Width="80" FormatString="F0"
                            ToolTip.Tip="Tamaño mínimo en píxeles entre líneas de grilla"/>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="8,0,0,0">
+        <TextBlock Text="Tol:" VerticalAlignment="Center"/>
+        <ac:NumericUpDown Value="{Binding ViewerFlattenTolerance}"
+                           Minimum="0.001" Maximum="1" Increment="0.01" Width="80" FormatString="F3"
+                           ToolTip.Tip="Tolerancia de aplanamiento de arcos (mm)"/>
       </StackPanel>
     </StackPanel>
   </Grid>

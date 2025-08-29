@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using OpenCNCPilot.Core.GCode;
 using OpenCNCPilot.Core.GCode.GCodeCommands;
 using OpenCNCPilot.Hardware.Services;
+using OpenCNCPilot.Core.Geometry;
 using OpenCNCPilot.UI.Services;
 using ReactiveUI;
 
@@ -19,6 +20,7 @@ public class FileViewModel : ReactiveObject
     private readonly ILogger<FileViewModel> _logger;
     private readonly IGCodeParser _parser;
     private readonly IGCodeSender _sender;
+    private readonly IGCodePathBuilder _pathBuilder;
     private readonly IDialogService _dialogs;
     private readonly ISettingsService _settings;
 
@@ -29,6 +31,7 @@ public class FileViewModel : ReactiveObject
     private TimeSpan _estimated = TimeSpan.Zero;
     private bool _isBusy;
     private bool _pauseOnHold;
+    private GeometryData? _geometryData;
 
     public ObservableCollection<string> GCodeLines { get; } = new();
     private ReadOnlyObservableCollection<Command>? _parsedCommands;
@@ -43,6 +46,11 @@ public class FileViewModel : ReactiveObject
     {
         get => _parsedCommands;
         private set => this.RaiseAndSetIfChanged(ref _parsedCommands, value);
+    }
+    public GeometryData? GeometryData
+    {
+        get => _geometryData;
+        private set => this.RaiseAndSetIfChanged(ref _geometryData, value);
     }
     public bool PauseOnHold
     {
@@ -62,13 +70,14 @@ public class FileViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> PauseCommand { get; }
     public ReactiveCommand<Unit, Unit> GotoCommand { get; }
 
-    public FileViewModel(ILogger<FileViewModel> logger, IGCodeParser parser, IGCodeSender sender, IDialogService dialogs, ISettingsService settings)
+    public FileViewModel(ILogger<FileViewModel> logger, IGCodeParser parser, IGCodeSender sender, IDialogService dialogs, ISettingsService settings, IGCodePathBuilder pathBuilder)
     {
         _logger = logger;
         _parser = parser;
         _sender = sender;
         _dialogs = dialogs;
         _settings = settings;
+        _pathBuilder = pathBuilder;
 
         // Observables de estado del sender
         _sender.StateChanged += (_, __) => UpdateFromSender();
@@ -91,6 +100,8 @@ public class FileViewModel : ReactiveObject
     {
         var s = await _settings.LoadAsync();
         PauseOnHold = s.PauseFileOnHold;
+        // Aplicar preferencia de ejes adicionales al parser
+        _parser.IgnoreAdditionalAxes = s.IgnoreAdditionalAxes;
     }
 
     private void UpdateFromSender()
@@ -122,6 +133,8 @@ public class FileViewModel : ReactiveObject
 
         try
         {
+            // Sincronizar flag del parser con settings actuales
+            _parser.IgnoreAdditionalAxes = s.IgnoreAdditionalAxes;
             _parser.Parse(lines);
         }
         catch (ParseException pex)
@@ -140,14 +153,29 @@ public class FileViewModel : ReactiveObject
         // Popular colecciones
         GCodeLines.Clear();
         foreach (var l in lines) GCodeLines.Add(l);
-    _sender.Load(lines);
+        _sender.Load(lines);
         UpdateFromSender();
 
         CurrentFileName = Path.GetFileName(file);
 
-    // Snapshot de comandos parseados (para el viewport)
-    var cmdList = new ObservableCollection<Command>(_parser.Commands);
-    ParsedCommands = new ReadOnlyObservableCollection<Command>(cmdList);
+        // Snapshot de comandos parseados (para el viewport)
+        var cmdList = new ObservableCollection<Command>(_parser.Commands);
+        ParsedCommands = new ReadOnlyObservableCollection<Command>(cmdList);
+
+        // Construir geometría (mm) para el viewer moderno
+        if (_parser is GCodeParser concrete)
+        {
+            // Ejecutar en background para no bloquear UI en archivos grandes
+            try
+            {
+                var geo = await Task.Run(() => _pathBuilder.Build(concrete));
+                GeometryData = geo;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error construyendo geometría para previsualización");
+            }
+        }
         var dir = Path.GetDirectoryName(file);
         if (!string.IsNullOrEmpty(dir))
         {
@@ -160,11 +188,18 @@ public class FileViewModel : ReactiveObject
     {
         var s = await _settings.LoadAsync();
         var startDir = s.LastGCodeDirectory;
-    var path = await _dialogs.SaveFileAsync("Save G-Code", startDir, "output.nc", null);
+    var defaultName = string.IsNullOrWhiteSpace(CurrentFileName) ? "output.nc" : CurrentFileName;
+    var path = await _dialogs.SaveFileAsync("Save G-Code", startDir, defaultName, null);
         if (string.IsNullOrEmpty(path)) return;
         try
         {
             await File.WriteAllLinesAsync(path, GCodeLines);
+            var dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(dir))
+            {
+                s.LastGCodeDirectory = dir!;
+                await _settings.SaveAsync(s);
+            }
         }
         catch (Exception ex)
         {
@@ -177,6 +212,7 @@ public class FileViewModel : ReactiveObject
         _sender.Clear();
         GCodeLines.Clear();
         ParsedCommands = null;
+        GeometryData = null;
         UpdateFromSender();
         CurrentFileName = string.Empty;
     }

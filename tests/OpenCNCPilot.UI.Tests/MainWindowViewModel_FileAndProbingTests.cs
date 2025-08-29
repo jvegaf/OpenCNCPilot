@@ -17,8 +17,10 @@ public class MainWindowViewModel_FileAndProbingTests
 {
     private sealed class DummySerial : ISerialPortService
     {
-        public event EventHandler<bool>? ConnectionStateChanged;
-        public event EventHandler<string>? DataReceived;
+    #pragma warning disable CS0067
+    public event EventHandler<bool>? ConnectionStateChanged;
+    public event EventHandler<string>? DataReceived;
+    #pragma warning restore CS0067
         public bool IsOpen => false;
         public string? PortName => null;
         public int BaudRate => 115200;

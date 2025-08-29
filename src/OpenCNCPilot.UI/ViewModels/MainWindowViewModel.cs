@@ -47,6 +47,7 @@ public class MainWindowViewModel : ReactiveObject
     private bool _viewerShowOrigin = true;
     private bool _viewerShowBounds = false;
     private double _viewerGridMinPixelStep = 30.0;
+    private double _viewerFlattenTolerance = 0.05;
     private string _currentFilePath = string.Empty;
     private int _probeGridX = 5;
     private int _probeGridY = 5;
@@ -63,9 +64,11 @@ public class MainWindowViewModel : ReactiveObject
         public bool PauseOnHold { get; set; }
         public bool IsSending => false;
         public string CurrentLineText => string.Empty;
+        #pragma warning disable CS0067 // event is never used in Noop dummy implementation
         public event EventHandler<OpenCNCPilot.Hardware.Services.GCodeSenderState>? StateChanged;
         public event EventHandler<int>? PositionChanged;
         public event EventHandler<string>? ErrorOccurred;
+        #pragma warning restore CS0067
         public void Clear() { }
         public void Dispose() { }
         public void Goto(int lineIndex) { }
@@ -81,12 +84,14 @@ public class MainWindowViewModel : ReactiveObject
         _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         _gcodeParser = gcodeParser ?? throw new ArgumentNullException(nameof(gcodeParser));
+        var pathBuilder = (IGCodePathBuilder?)App.Services?.GetService(typeof(IGCodePathBuilder)) ?? new GCodePathBuilder();
         FileTab = fileTab ?? new FileViewModel(
             Microsoft.Extensions.Logging.Abstractions.NullLogger<FileViewModel>.Instance,
             _gcodeParser,
             new NoopSender(),
             _dialogService,
-            _settingsService);
+            _settingsService,
+            pathBuilder);
         // Initialize commands
         var canConnectObs = this
             .WhenAnyValue(x => x.SelectedPort, x => x.IsConnected,
@@ -119,6 +124,7 @@ public class MainWindowViewModel : ReactiveObject
                         ViewerShowOrigin = s1.ViewerShowOrigin;
                         ViewerShowBounds = s1.ViewerShowBounds;
                         ViewerGridMinPixelStep = s1.ViewerGridMinPixelStep;
+                        ViewerFlattenTolerance = s1.ViewerFlattenTolerance;
                     });
                 }
                 vm.CloseRequested -= OnClose;
@@ -378,6 +384,12 @@ public class MainWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref _viewerGridMinPixelStep, value);
     }
 
+    public double ViewerFlattenTolerance
+    {
+        get => _viewerFlattenTolerance;
+        set => this.RaiseAndSetIfChanged(ref _viewerFlattenTolerance, value);
+    }
+
     public string CurrentFilePath
     {
         get => _currentFilePath;
@@ -532,6 +544,7 @@ public class MainWindowViewModel : ReactiveObject
             ViewerShowOrigin = s.ViewerShowOrigin;
             ViewerShowBounds = s.ViewerShowBounds;
             ViewerGridMinPixelStep = s.ViewerGridMinPixelStep;
+            ViewerFlattenTolerance = s.ViewerFlattenTolerance;
         }
         catch { }
     }
