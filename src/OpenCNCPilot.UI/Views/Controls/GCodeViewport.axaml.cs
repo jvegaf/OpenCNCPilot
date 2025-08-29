@@ -108,10 +108,28 @@ public partial class GCodeViewport : OpenGlControlBase
         set => SetValue(FlattenToleranceProperty, value);
     }
 
+    // Optional simplification after flattening (Douglas–Peucker)
+    public static readonly StyledProperty<bool> EnableSimplificationProperty =
+        AvaloniaProperty.Register<GCodeViewport, bool>(nameof(EnableSimplification), false);
+    public static readonly StyledProperty<double> SimplificationEpsilonProperty =
+        AvaloniaProperty.Register<GCodeViewport, double>(nameof(SimplificationEpsilon), 0.10);
+    public bool EnableSimplification
+    {
+        get => GetValue(EnableSimplificationProperty);
+        set => SetValue(EnableSimplificationProperty, value);
+    }
+    public double SimplificationEpsilon
+    {
+        get => GetValue(SimplificationEpsilonProperty);
+        set => SetValue(SimplificationEpsilonProperty, Math.Max(0, value));
+    }
+
     private List<List<Vector3>>? _cachedRapidPaths;
     private List<List<Vector3>>? _cachedCutPaths;
     private GeometryData? _cachedGeometrySource;
     private double _cachedTolerance;
+    private bool _cachedSimplifyEnabled;
+    private double _cachedSimplifyEps;
 
     private Point? _lastPointer;
     private bool _isRotating;
@@ -294,7 +312,14 @@ public partial class GCodeViewport : OpenGlControlBase
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
-        Zoom = ViewportInteractionLogic.ApplyWheelZoom(Zoom, e.Delta.Y * 120, ZoomStepFactor); // normalize to 120-steps
+        // Anchored zoom around cursor
+        int width = Math.Max(1, (int)Bounds.Width);
+        int height = Math.Max(1, (int)Bounds.Height);
+        var pos = e.GetPosition(this);
+        var (nz, npx, npy) = ViewportInteractionLogic.ApplyWheelZoomAnchored(Zoom, e.Delta.Y * 120, ZoomStepFactor, PanX, PanY, pos.X, pos.Y, width, height);
+        Zoom = nz;
+        PanX = npx;
+        PanY = npy;
     }
 
     protected override void OnOpenGlDeinit(GlInterface gl)
@@ -502,7 +527,9 @@ public partial class GCodeViewport : OpenGlControlBase
             change.Property == RapidStrokeWidthProperty ||
             change.Property == CutStrokeWidthProperty ||
             change.Property == RapidColorArgbProperty ||
-            change.Property == CutColorArgbProperty)
+            change.Property == CutColorArgbProperty ||
+            change.Property == EnableSimplificationProperty ||
+            change.Property == SimplificationEpsilonProperty)
         {
             if (change.Property == CommandsProperty || change.Property == GeometryProperty || change.Property == FitRequestIdProperty)
             {
@@ -510,7 +537,7 @@ public partial class GCodeViewport : OpenGlControlBase
                 InvalidateSkPathCache();
                 AutoFit();
             }
-            else if (change.Property == ZoomProperty || change.Property == RotationXProperty || change.Property == RotationYProperty || change.Property == PanXProperty || change.Property == PanYProperty || change.Property == FlattenToleranceProperty)
+            else if (change.Property == ZoomProperty || change.Property == RotationXProperty || change.Property == RotationYProperty || change.Property == PanXProperty || change.Property == PanYProperty || change.Property == FlattenToleranceProperty || change.Property == EnableSimplificationProperty || change.Property == SimplificationEpsilonProperty)
             {
                 InvalidateSkPathCache();
             }
@@ -534,18 +561,27 @@ public partial class GCodeViewport : OpenGlControlBase
         _cachedCutPaths = null;
         _cachedGeometrySource = null;
         _cachedTolerance = 0;
+        _cachedSimplifyEnabled = false;
+        _cachedSimplifyEps = 0;
     }
 
     private void EnsureFlattenCache()
     {
         if (Geometry is null) { InvalidateFlattenCache(); return; }
-        if (_cachedRapidPaths != null && ReferenceEquals(_cachedGeometrySource, Geometry) && Math.Abs(_cachedTolerance - FlattenTolerance) < 1e-12)
+        if (_cachedRapidPaths != null && ReferenceEquals(_cachedGeometrySource, Geometry) && Math.Abs(_cachedTolerance - FlattenTolerance) < 1e-12 && _cachedSimplifyEnabled == EnableSimplification && Math.Abs(_cachedSimplifyEps - SimplificationEpsilon) < 1e-12)
             return;
         var (rapids, cuts) = SegmentFlattener.Flatten(Geometry, FlattenTolerance);
+        if (EnableSimplification && SimplificationEpsilon > 0)
+        {
+            for (int i = 0; i < rapids.Count; i++) rapids[i] = PolylineSimplifier.Simplify(rapids[i], SimplificationEpsilon);
+            for (int i = 0; i < cuts.Count; i++) cuts[i] = PolylineSimplifier.Simplify(cuts[i], SimplificationEpsilon);
+        }
         _cachedRapidPaths = rapids;
         _cachedCutPaths = cuts;
         _cachedGeometrySource = Geometry;
         _cachedTolerance = FlattenTolerance;
+        _cachedSimplifyEnabled = EnableSimplification;
+        _cachedSimplifyEps = SimplificationEpsilon;
         InvalidateSkPathCache();
     }
 

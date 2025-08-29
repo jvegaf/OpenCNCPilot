@@ -80,9 +80,20 @@ using Avalonia.Controls;
   - `StyledProperty` de `Zoom`, `RotationX`, `RotationY`, `Commands` y `FitRequestId`.
   - Renderiza ejes y trayectorias (Line/Arc) en proyección XY.
   - `AutoFit()` al cambiar `Commands` y cuando `FitRequestId` aumenta.
+  - Simplificación opcional: `EnableSimplification` + `SimplificationEpsilon` (Douglas–Peucker post‑flatten).
+  - Caché de `SKPath` por tipo (rapids/cuts) y por transformación de vista.
+  - Interacciones: zoom de rueda anclado al cursor; pan con arrastre; throttle de invalidaciones a ~60 FPS.
 - Enlazar en `MainWindow.axaml`:
   - `Commands="{Binding GCodeCommands}"`, `Zoom="{Binding ViewerZoom}"`, `FitRequestId="{Binding FitRequestId}"`.
   - Toolbar flotante con comandos `FitToView`, `ZoomIn`, `ZoomOut`, `ZoomReset`.
+
+### Diferencias clave vs. WPF
+- `StyledProperty` en lugar de `DependencyProperty` para exponer propiedades enlazables en controles.
+- Eventos de puntero: `OnPointerPressed/Released/Moved/WheelChanged` (no hay `MouseWheel`/`MouseMove` de WPF tal cual).
+- Renderizado 2D acelerado con Skia sobre OpenGL (`GRGlInterface`/`GRContext`), con fallback seguro si GL no está disponible (p. ej., CI headless).
+- Caché de `SKPath` y `DispatcherTimer` para consolidar invalidaciones a ~60 FPS.
+- Zoom anclado al cursor implementado en lógica UI-agnóstica (`ViewportInteractionLogic.ApplyWheelZoomAnchored`) para facilitar pruebas.
+ - Si se crean pruebas que dependan de GL, etiquetar como `[Trait("Category","UI-GL")]` y excluir en CI.
 
 ## Servicios de UI y Settings
 - `IDialogService`: open/save, alert/confirm, warnings, prompt numérico.

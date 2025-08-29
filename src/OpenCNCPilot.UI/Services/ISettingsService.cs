@@ -23,6 +23,8 @@ public class AppSettings
     public bool ViewerShowBounds { get; set; } = false;
     public double ViewerGridMinPixelStep { get; set; } = 30.0;
     public double ViewerFlattenTolerance { get; set; } = 0.05;
+    public bool ViewerEnableSimplification { get; set; } = false;
+    public double ViewerSimplificationEpsilon { get; set; } = 0.10;
     // Viewer styling
     public uint ViewerRapidColor { get; set; } = 0xFF19B4FF; // ARGB
     public uint ViewerCutColor { get; set; } = 0xFFFF7828;   // ARGB

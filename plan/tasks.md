@@ -100,14 +100,14 @@ Fecha: 2025-08-29
 - Aceptación: Activable por setting; mejora performance en >100k movimientos.
 - Dep: 1.3, 2.1
 - Estimación: S
-- Estado: TODO
+- Estado: DONE
 
 4.2 Medición de performance
 - Descripción: Pruebas/benchmarks de parse+build para 10k y 100k movimientos.
 - Aceptación: 10k < 1s en Linux; resultados documentados.
 - Dep: 1.4
 - Estimación: S
-- Estado: TODO
+- Estado: DONE
 
 ---
 
@@ -118,7 +118,7 @@ Fecha: 2025-08-29
 - Aceptación: Tests verdes en CI.
 - Dep: 2.2
 - Estimación: XS
-- Estado: TODO
+- Estado: DONE
 
 5.2 Ajustes CI (si smoke UI)
 - Descripción: Marcar `[Trait("Category","UI-GL")]` o usar Skia CPU offscreen; evitar fallos en headless.
@@ -136,14 +136,14 @@ Fecha: 2025-08-29
 - Aceptación: PR con diagrama y explicación.
 - Dep: 3.2
 - Estimación: XS
-- Estado: TODO
+- Estado: DONE
 
 6.2 Guía de migración WPF→Avalonia (viewer)
 - Descripción: Añadir diferencias clave (OpenGL/Skia, propiedades StyledProperty).
 - Aceptación: Guía actualizada.
 - Dep: 2.x
 - Estimación: XS
-- Estado: TODO
+- Estado: DONE
 
 ---
 

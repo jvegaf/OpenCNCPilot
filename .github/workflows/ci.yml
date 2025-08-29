@@ -2,9 +2,9 @@ name: CI Build and Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, dev, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, dev, develop ]
 
 jobs:
   build-test:
@@ -42,11 +42,12 @@ jobs:
     - name: Build solution
       run: dotnet build OpenCNCPilot.Modern.sln -c Release --no-restore
 
-    - name: Run tests (exclude hardware)
+    - name: Run tests (exclude hardware/perf)
       run: >
         dotnet test OpenCNCPilot.Modern.sln -c Release --no-build \
         --logger trx --results-directory "TestResults-${{ matrix.os }}" \
-        --filter "Category!=RequiresHardware"
+        --filter "Category!=RequiresHardware&Category!=Performance"
+      # Nota: si en el futuro se agregan pruebas con dependencias de OpenGL, añadir Category!=UI-GL
 
     - name: Upload test results
       uses: actions/upload-artifact@v3
@@ -79,11 +80,11 @@ jobs:
     - name: Build solution
       run: dotnet build OpenCNCPilot.Modern.sln -c Release --no-restore
 
-    - name: Run tests with coverage (exclude hardware)
+    - name: Run tests with coverage (exclude hardware/perf)
       run: >
         dotnet test OpenCNCPilot.Modern.sln -c Release --no-build \
         --collect:"XPlat Code Coverage" --results-directory ./coverage \
-        --filter "Category!=RequiresHardware"
+        --filter "Category!=RequiresHardware&Category!=Performance"
 
     - name: Upload coverage artifact
       uses: actions/upload-artifact@v4

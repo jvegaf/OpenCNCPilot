@@ -1,5 +1,32 @@
 # Arquitectura UI Moderna (Avalonia)
 
+## GCode Rendering Pipeline
+
+Flujo:
+- Entrada: G-code → `GCodeParser` → `Command` (`Line`, `Arc`, ...).
+- Geometría: `GCodePathBuilder` → `GeometryData` (`LineSegment`/`ArcSegment` + `Bounds3`).
+- Aplanado: `SegmentFlattener.Flatten(GeometryData, tolerance)` → polilíneas por tipo (`Rapid`/`Cut`).
+- Simplificación (opcional): `PolylineSimplifier.Simplify(points, epsilon)` (Douglas–Peucker XY).
+- Caché: `SKPath` en coordenadas de pantalla usando `Zoom`, `RotationX/Y`, `PanX/Y`.
+- Render: `GCodeViewport` (Avalonia `OpenGlControlBase` + Skia) dibuja paths con colores/grosor configurables.
+
+Diagrama de secuencia (simplificado):
+
+```mermaid
+flowchart LR
+  A[Archivo G-code] --> B[GCodeParser]
+  B --> C[GCodePathBuilder]
+  C --> D[SegmentFlattener\n(tolerance)]
+  D -->|polilíneas rapid/cut| E[PolylineSimplifier\n(epsilon, opcional)]
+  E --> F[Cache SKPath\n(Zoom/Rot/Pan)]
+  F --> G[GCodeViewport\n(Skia sobre OpenGL)]
+```
+
+Notas:
+- El zoom/pan se interpreta como “mm por semieje de viewport”; proyección via `ViewportMath.TransformWorldToView`.
+- Rueda del ratón: zoom anclado al cursor (`ViewportInteractionLogic.ApplyWheelZoomAnchored`).
+- Cachés se invalidan con cambios relevantes y se consolidan a ~60 FPS.
+
 ## GCodeViewport
 StyledProperties: `Zoom`, `RotationX`, `RotationY`, `PanX`, `PanY`, `Commands`, `FitRequestId`.
 Sensibilidades configurables: `RotateSensitivity` (deg/px), `PanSensitivity` (world/px), `ZoomStepFactor` (>1).

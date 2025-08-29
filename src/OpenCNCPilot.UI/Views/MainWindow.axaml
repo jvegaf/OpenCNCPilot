@@ -137,6 +137,8 @@
                ShowBounds="{Binding ViewerShowBounds}"
                GridMinPixelStep="{Binding ViewerGridMinPixelStep}"
                FlattenTolerance="{Binding ViewerFlattenTolerance}"
+               EnableSimplification="{Binding ViewerEnableSimplification}"
+               SimplificationEpsilon="{Binding ViewerSimplificationEpsilon}"
                RapidColorArgb="{Binding ViewerRapidColor}"
                CutColorArgb="{Binding ViewerCutColor}"
                RapidStrokeWidth="{Binding ViewerRapidStrokeWidth}"

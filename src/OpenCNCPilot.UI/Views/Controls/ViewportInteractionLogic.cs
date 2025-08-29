@@ -25,4 +25,40 @@ public static class ViewportInteractionLogic
         zoom = Math.Clamp(zoom / factor, minZoom, maxZoom);
         return zoom;
     }
+
+    /// <summary>
+    /// Anchored zoom: returns new zoom and adjusted pan so that the world point under the given screen
+    /// coordinates (sx, sy) remains stationary on screen. Coordinates are in pixels; width/height are viewport size.
+    /// </summary>
+    public static (double zoom, double panX, double panY) ApplyWheelZoomAnchored(
+        double zoom,
+        double wheelDelta,
+        double stepFactor,
+        double panX,
+        double panY,
+        double sx,
+        double sy,
+        int width,
+        int height,
+        double minZoom = 1e-4,
+        double maxZoom = 1e6)
+    {
+        double oldZoom = zoom;
+        double newZoom = ApplyWheelZoom(zoom, wheelDelta, stepFactor, minZoom, maxZoom);
+        if (Math.Abs(newZoom - oldZoom) < 1e-15)
+            return (zoom, panX, panY);
+
+        double hw = Math.Max(1, width) / 2.0;
+        double hh = Math.Max(1, height) / 2.0;
+        // View-space coordinates at cursor with old zoom
+        double vxc = (sx - hw) * oldZoom;
+        double vyc = (hh - sy) * oldZoom;
+        // New view-space coordinates at cursor with new zoom
+        double vxPrime = (sx - hw) * newZoom;
+        double vyPrime = (hh - sy) * newZoom;
+        // Maintain world' = v + pan => newPan = oldWorld' - v'
+        double newPanX = (vxc + panX) - vxPrime;
+        double newPanY = (vyc + panY) - vyPrime;
+        return (newZoom, newPanX, newPanY);
+    }
 }

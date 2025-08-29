@@ -48,6 +48,8 @@ public class MainWindowViewModel : ReactiveObject
     private bool _viewerShowBounds = false;
     private double _viewerGridMinPixelStep = 30.0;
     private double _viewerFlattenTolerance = 0.05;
+    private bool _viewerEnableSimplification = false;
+    private double _viewerSimplificationEpsilon = 0.10;
     private uint _viewerRapidColor = 0xFF19B4FF;
     private uint _viewerCutColor = 0xFFFF7828;
     private double _viewerRapidStrokeWidth = 1.2;
@@ -129,6 +131,8 @@ public class MainWindowViewModel : ReactiveObject
                         ViewerShowBounds = s1.ViewerShowBounds;
                         ViewerGridMinPixelStep = s1.ViewerGridMinPixelStep;
                         ViewerFlattenTolerance = s1.ViewerFlattenTolerance;
+                        ViewerEnableSimplification = s1.ViewerEnableSimplification;
+                        ViewerSimplificationEpsilon = s1.ViewerSimplificationEpsilon;
                     });
                 }
                 vm.CloseRequested -= OnClose;
@@ -394,6 +398,18 @@ public class MainWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref _viewerFlattenTolerance, value);
     }
 
+    public bool ViewerEnableSimplification
+    {
+        get => _viewerEnableSimplification;
+        set => this.RaiseAndSetIfChanged(ref _viewerEnableSimplification, value);
+    }
+
+    public double ViewerSimplificationEpsilon
+    {
+        get => _viewerSimplificationEpsilon;
+        set => this.RaiseAndSetIfChanged(ref _viewerSimplificationEpsilon, value);
+    }
+
     public uint ViewerRapidColor
     {
         get => _viewerRapidColor;
@@ -573,6 +589,8 @@ public class MainWindowViewModel : ReactiveObject
             ViewerShowBounds = s.ViewerShowBounds;
             ViewerGridMinPixelStep = s.ViewerGridMinPixelStep;
             ViewerFlattenTolerance = s.ViewerFlattenTolerance;
+            ViewerEnableSimplification = s.ViewerEnableSimplification;
+            ViewerSimplificationEpsilon = s.ViewerSimplificationEpsilon;
             ViewerRapidColor = s.ViewerRapidColor;
             ViewerCutColor = s.ViewerCutColor;
             ViewerRapidStrokeWidth = s.ViewerRapidStrokeWidth;
