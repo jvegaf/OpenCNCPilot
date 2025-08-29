@@ -45,6 +45,11 @@ public class MainWindowViewModel : ReactiveObject
     private bool _viewerShowOrigin = true;
     private bool _viewerShowBounds = false;
     private double _viewerGridMinPixelStep = 30.0;
+    private string _currentFilePath = string.Empty;
+    private int _probeGridX = 5;
+    private int _probeGridY = 5;
+    private double _probeAreaWidth = 100.0;
+    private double _probeAreaHeight = 100.0;
 
     public MainWindowViewModel(ILogger<MainWindowViewModel> logger, ISerialPortService serialPortService, IDialogService dialogService, ISettingsService settingsService, IGCodeParser gcodeParser)
     {
@@ -214,6 +219,9 @@ public class MainWindowViewModel : ReactiveObject
                 // Exponer comandos parseados a la vista (snapshot de solo lectura)
                 var list = new ObservableCollection<Command>(_gcodeParser.Commands);
                 GCodeCommands = new ReadOnlyObservableCollection<Command>(list);
+                CurrentFilePath = file;
+                this.RaisePropertyChanged(nameof(GCodeCommandCount));
+                this.RaisePropertyChanged(nameof(CurrentFileName));
 
                 _logger.LogInformation("Loaded G-Code file: {File}", file);
             }
@@ -222,6 +230,19 @@ public class MainWindowViewModel : ReactiveObject
                 _logger.LogError(ex, "Failed to load G-Code file: {File}", file);
                 await _dialogService.AlertAsync("Error", $"Could not load G-Code file.\n{ex.Message}");
             }
+        });
+
+        ClearGCodeFileCommand = ReactiveCommand.Create(() =>
+        {
+            GCodeCommands = null;
+            CurrentFilePath = string.Empty;
+            this.RaisePropertyChanged(nameof(GCodeCommandCount));
+            this.RaisePropertyChanged(nameof(CurrentFileName));
+        });
+
+        StartProbeCommand = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await _dialogService.AlertAsync("Probing", "La función de probing aún no está implementada en esta fase.");
         });
 
         // Subscribe to serial port events
@@ -359,6 +380,16 @@ public class MainWindowViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref _viewerGridMinPixelStep, value);
     }
 
+    public string CurrentFilePath
+    {
+        get => _currentFilePath;
+        private set => this.RaiseAndSetIfChanged(ref _currentFilePath, value);
+    }
+
+    public string CurrentFileName => string.IsNullOrEmpty(CurrentFilePath) ? "(none)" : Path.GetFileName(CurrentFilePath);
+
+    public int GCodeCommandCount => GCodeCommands?.Count ?? 0;
+
     #endregion
 
     #region Commands
@@ -370,6 +401,7 @@ public class MainWindowViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> DemoWarningsCommand { get; }
     public ReactiveCommand<Unit, Unit> OpenGrblSettingsCommand { get; }
     public ReactiveCommand<Unit, Unit> LoadGCodeFileCommand { get; }
+    public ReactiveCommand<Unit, Unit> ClearGCodeFileCommand { get; }
     public ReactiveCommand<Unit, Unit> FitToViewCommand { get; }
     public ReactiveCommand<Unit, Unit> ZoomInCommand { get; }
     public ReactiveCommand<Unit, Unit> ZoomOutCommand { get; }
@@ -377,6 +409,7 @@ public class MainWindowViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> ResetViewCommand { get; }
     public ReactiveCommand<Unit, Unit> SnapTo2DCommand { get; }
     public ReactiveCommand<Unit, Unit> FitAndResetViewCommand { get; }
+    public ReactiveCommand<Unit, Unit> StartProbeCommand { get; }
     public ReactiveCommand<Unit, Unit> RotateLeftCommand { get; }
     public ReactiveCommand<Unit, Unit> RotateRightCommand { get; }
     public ReactiveCommand<Unit, Unit> RotateUpCommand { get; }
@@ -503,6 +536,34 @@ public class MainWindowViewModel : ReactiveObject
             ViewerGridMinPixelStep = s.ViewerGridMinPixelStep;
         }
         catch { }
+    }
+
+    #endregion
+
+    #region Probing Settings
+
+    public int ProbeGridX
+    {
+        get => _probeGridX;
+        set => this.RaiseAndSetIfChanged(ref _probeGridX, Math.Clamp(value, 1, 1000));
+    }
+
+    public int ProbeGridY
+    {
+        get => _probeGridY;
+        set => this.RaiseAndSetIfChanged(ref _probeGridY, Math.Clamp(value, 1, 1000));
+    }
+
+    public double ProbeAreaWidth
+    {
+        get => _probeAreaWidth;
+        set => this.RaiseAndSetIfChanged(ref _probeAreaWidth, Math.Clamp(value, 1, 100000));
+    }
+
+    public double ProbeAreaHeight
+    {
+        get => _probeAreaHeight;
+        set => this.RaiseAndSetIfChanged(ref _probeAreaHeight, Math.Clamp(value, 1, 100000));
     }
 
     #endregion

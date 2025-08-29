@@ -186,19 +186,44 @@
 
       <!-- File Tab -->
       <TabItem Header="File">
-        <Grid Margin="10">
-          <TextBlock Text="File management and G-Code preview&#x0A;(To be implemented)"
-                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                     FontSize="16" Opacity="0.7" TextAlignment="Center"/>
+        <Grid Margin="10" RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
+          <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="12">
+            <Button Content="Load G-Code" Command="{Binding LoadGCodeFileCommand}"/>
+            <Button Content="Clear" Command="{Binding ClearGCodeFileCommand}"/>
+          </StackPanel>
+          <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="20" Margin="0,10,0,10">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="File:" FontWeight="Bold"/>
+              <TextBlock Text="{Binding CurrentFileName}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="Commands:" FontWeight="Bold"/>
+              <TextBlock Text="{Binding GCodeCommandCount}"/>
+            </StackPanel>
+          </StackPanel>
+          <Border Grid.Row="2" Grid.ColumnSpan="2" Background="{DynamicResource SystemControlBackgroundAltHighBrush}" Padding="10" CornerRadius="5">
+            <TextBlock Text="Vista previa y operaciones de archivo se ampliarán en fases siguientes." Opacity="0.7"/>
+          </Border>
         </Grid>
       </TabItem>
 
       <!-- Probing Tab -->
       <TabItem Header="Probing">
-        <Grid Margin="10">
-          <TextBlock Text="Height map probing and auto-leveling&#x0A;(To be implemented)"
-                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                     FontSize="16" Opacity="0.7" TextAlignment="Center"/>
+        <Grid Margin="10" RowDefinitions="Auto,Auto,*" ColumnDefinitions="Auto,*,Auto,*,Auto">
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="Grid X:" VerticalAlignment="Center"/>
+          <ac:NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding ProbeGridX}" Minimum="1" Maximum="1000" Width="120"/>
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="Grid Y:" VerticalAlignment="Center" Margin="20,0,0,0"/>
+          <ac:NumericUpDown Grid.Row="0" Grid.Column="3" Value="{Binding ProbeGridY}" Minimum="1" Maximum="1000" Width="120"/>
+          <Button Grid.Row="0" Grid.Column="4" Content="Start Probe" Command="{Binding StartProbeCommand}" Margin="20,0,0,0"/>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="Width:" VerticalAlignment="Center"/>
+          <ac:NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ProbeAreaWidth}" Minimum="1" Maximum="100000" Increment="1" Width="120"/>
+          <TextBlock Grid.Row="1" Grid.Column="2" Text="Height:" VerticalAlignment="Center" Margin="20,0,0,0"/>
+          <ac:NumericUpDown Grid.Row="1" Grid.Column="3" Value="{Binding ProbeAreaHeight}" Minimum="1" Maximum="100000" Increment="1" Width="120"/>
+
+          <Border Grid.Row="2" Grid.ColumnSpan="5" Background="{DynamicResource SystemControlBackgroundAltHighBrush}" Padding="10" CornerRadius="5" Margin="0,10,0,0">
+            <TextBlock Text="La lógica de probing y visualización del height map se implementará en próximas fases." Opacity="0.7"/>
+          </Border>
         </Grid>
       </TabItem>
 
