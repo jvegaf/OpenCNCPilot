@@ -70,6 +70,7 @@ public partial class App : Application
         // Core services: IGCodeParser is currently stateless between Parse() calls,
         // so Singleton is acceptable. Switch to Transient if internal state becomes per-parse.
         services.AddSingleton<IGCodeParser, GCodeParser>();
+    services.AddSingleton<IGCodePathBuilder, GCodePathBuilder>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();
