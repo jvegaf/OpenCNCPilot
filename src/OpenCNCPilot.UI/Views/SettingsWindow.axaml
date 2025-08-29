@@ -14,7 +14,7 @@
   <Grid RowDefinitions="* , Auto" Margin="16">
     <StackPanel Spacing="10">
       <TextBlock Text="Serial Settings" FontWeight="Bold" FontSize="14"/>
-  <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+  <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
         <TextBlock Grid.Row="0" Grid.Column="0" Text="Default COM Port:" VerticalAlignment="Center"/>
         <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DefaultComPort}"/>
 
@@ -22,7 +22,10 @@
   <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BaudRate}" Watermark="115200"/>
 
         <TextBlock Grid.Row="2" Grid.Column="0" Text="Last GCode Directory:" VerticalAlignment="Center"/>
-        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding LastGCodeDirectory}"/>
+        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+          <TextBox Text="{Binding LastGCodeDirectory}" MinWidth="260"/>
+          <Button Content="Browse…" Command="{Binding BrowseLastGCodeDirectoryCommand}"/>
+        </StackPanel>
 
   <TextBlock Grid.Row="3" Grid.Column="0" Text="Viewer Rotate Sensitivity:" VerticalAlignment="Center"/>
   <ac:NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding ViewerRotateSensitivity}"
@@ -52,19 +55,24 @@
       <ac:NumericUpDown Grid.Row="9" Grid.Column="1" Value="{Binding ViewerGridMinPixelStep}"
         Minimum="4" Maximum="200" Increment="2" FormatString="F0"/>
 
-  <TextBlock Grid.Row="10" Grid.Column="0" Text="Enable Simplification:" VerticalAlignment="Center"/>
-  <ToggleSwitch Grid.Row="10" Grid.Column="1" IsChecked="{Binding ViewerEnableSimplification}"
+      <TextBlock Grid.Row="10" Grid.Column="0" Text="Flatten Tolerance (mm):" VerticalAlignment="Center"/>
+      <ac:NumericUpDown Grid.Row="10" Grid.Column="1" Value="{Binding ViewerFlattenTolerance}"
+                        Minimum="0.001" Maximum="1" Increment="0.01" FormatString="F3"
+                        ToolTip.Tip="Tolerancia para aplanar arcos en mm (más alta = menos segmentos)"/>
+
+  <TextBlock Grid.Row="11" Grid.Column="0" Text="Enable Simplification:" VerticalAlignment="Center"/>
+  <ToggleSwitch Grid.Row="11" Grid.Column="1" IsChecked="{Binding ViewerEnableSimplification}"
         ToolTip.Tip="Reduce vértices de polilíneas grandes (Douglas–Peucker) para mejorar rendimiento."/>
 
-      <TextBlock Grid.Row="11" Grid.Column="0" Text="Simplification Epsilon (mm):" VerticalAlignment="Center"
+      <TextBlock Grid.Row="12" Grid.Column="0" Text="Simplification Epsilon (mm):" VerticalAlignment="Center"
                  IsEnabled="{Binding ViewerEnableSimplification}"/>
-      <ac:NumericUpDown Grid.Row="11" Grid.Column="1" Value="{Binding ViewerSimplificationEpsilon}"
+      <ac:NumericUpDown Grid.Row="12" Grid.Column="1" Value="{Binding ViewerSimplificationEpsilon}"
         Minimum="0" Maximum="100" Increment="0.01" FormatString="F2"
         IsEnabled="{Binding ViewerEnableSimplification}"
         ToolTip.Tip="Tolerancia de simplificación: mayor valor = más reducción de puntos (posible pérdida de detalle)."/>
 
-      <TextBlock Grid.Row="12" Grid.Column="0" Text="Rapid Color (ARGB):" VerticalAlignment="Center"/>
-      <StackPanel Grid.Row="12" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+      <TextBlock Grid.Row="13" Grid.Column="0" Text="Rapid Color (ARGB):" VerticalAlignment="Center"/>
+      <StackPanel Grid.Row="13" Grid.Column="1" Orientation="Horizontal" Spacing="8">
   <Border Width="24" Height="24" CornerRadius="4"
     Background="{Binding ViewerRapidColor, Converter={x:Static conv:ArgbUintToBrushConverter.Instance}}"/>
   <TextBox Width="160"
@@ -72,8 +80,8 @@
      Watermark="#FF19B4FF"/>
       </StackPanel>
 
-      <TextBlock Grid.Row="13" Grid.Column="0" Text="Cut Color (ARGB):" VerticalAlignment="Center"/>
-      <StackPanel Grid.Row="13" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+  <TextBlock Grid.Row="14" Grid.Column="0" Text="Cut Color (ARGB):" VerticalAlignment="Center"/>
+  <StackPanel Grid.Row="14" Grid.Column="1" Orientation="Horizontal" Spacing="8">
   <Border Width="24" Height="24" CornerRadius="4"
     Background="{Binding ViewerCutColor, Converter={x:Static conv:ArgbUintToBrushConverter.Instance}}"/>
   <TextBox Width="160"
@@ -81,12 +89,12 @@
      Watermark="#FFFF7828"/>
       </StackPanel>
 
-      <TextBlock Grid.Row="14" Grid.Column="0" Text="Rapid Stroke Width:" VerticalAlignment="Center"/>
-      <ac:NumericUpDown Grid.Row="14" Grid.Column="1" Value="{Binding ViewerRapidStrokeWidth}"
+      <TextBlock Grid.Row="15" Grid.Column="0" Text="Rapid Stroke Width:" VerticalAlignment="Center"/>
+      <ac:NumericUpDown Grid.Row="15" Grid.Column="1" Value="{Binding ViewerRapidStrokeWidth}"
       Minimum="0.1" Maximum="10" Increment="0.1" FormatString="F1"/>
 
-      <TextBlock Grid.Row="15" Grid.Column="0" Text="Cut Stroke Width:" VerticalAlignment="Center"/>
-      <ac:NumericUpDown Grid.Row="15" Grid.Column="1" Value="{Binding ViewerCutStrokeWidth}"
+      <TextBlock Grid.Row="16" Grid.Column="0" Text="Cut Stroke Width:" VerticalAlignment="Center"/>
+      <ac:NumericUpDown Grid.Row="16" Grid.Column="1" Value="{Binding ViewerCutStrokeWidth}"
       Minimum="0.1" Maximum="10" Increment="0.1" FormatString="F1"/>
       </Grid>
     </StackPanel>

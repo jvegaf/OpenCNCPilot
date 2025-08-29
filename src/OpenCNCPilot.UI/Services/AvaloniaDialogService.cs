@@ -30,7 +30,7 @@ public class AvaloniaDialogService : IDialogService
             Title = title,
             AllowMultiple = allowMultiple,
             SuggestedStartLocation = initialDirectory is not null ? await ToFolder(top, initialDirectory) : null,
-            FileTypeFilter = filters is not null ? filters.Select(ToFilePickerType).ToList() : null
+            FileTypeFilter = (filters is { Length: > 0 }) ? filters.Select(ToFilePickerType).ToList() : null
         };
 
         var result = await top.StorageProvider.OpenFilePickerAsync(options);
@@ -47,7 +47,7 @@ public class AvaloniaDialogService : IDialogService
             Title = title,
             SuggestedFileName = defaultFileName,
             SuggestedStartLocation = initialDirectory is not null ? await ToFolder(top, initialDirectory) : null,
-            FileTypeChoices = filters is not null ? filters.Select(ToFilePickerType).ToList() : null
+            FileTypeChoices = (filters is { Length: > 0 }) ? filters.Select(ToFilePickerType).ToList() : null
         };
 
         var result = await top.StorageProvider.SaveFilePickerAsync(options);
@@ -220,13 +220,32 @@ public class AvaloniaDialogService : IDialogService
 
     private static FilePickerFileType ToFilePickerType(string pattern)
     {
-        // pattern example: "GCode (*.gcode;*.nc)|*.gcode;*.nc"
-        var parts = pattern.Split('|');
-        var name = parts.Length > 0 ? parts[0] : "Files";
-        var globs = parts.Length > 1 ? parts[1].Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : Array.Empty<string>();
-        return new FilePickerFileType(name)
+        // Supported inputs:
+        // 1) "Name|*.ext;*.ext2"
+        // 2) "*.ext;*.ext2" (no name)
+        // 3) "*.*"
+        if (string.IsNullOrWhiteSpace(pattern))
+            return new FilePickerFileType("Files") { Patterns = new[] { "*.*" } };
+
+        string name;
+        string globsPart;
+        var parts = pattern.Split('|', 2);
+        if (parts.Length == 2)
         {
-            Patterns = globs.Length > 0 ? globs : new[] { "*.*" }
-        };
+            name = string.IsNullOrWhiteSpace(parts[0]) ? "Files" : parts[0].Trim();
+            globsPart = parts[1];
+        }
+        else
+        {
+            name = "Files";
+            globsPart = parts[0];
+        }
+
+        var globs = globsPart
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(g => !string.IsNullOrWhiteSpace(g))
+            .ToArray();
+        if (globs.Length == 0) globs = new[] { "*.*" };
+        return new FilePickerFileType(name) { Patterns = globs };
     }
 }

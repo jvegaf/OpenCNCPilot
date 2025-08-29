@@ -117,7 +117,7 @@ public class MainWindowViewModel_GrblSettingsTests
         dialogVm.Should().NotBeNull();
         dialogVm!.Items.Should().NotBeEmpty();
         dialogVm.Items.Select(i => i.Number).Should().Contain(new[] { 0, 1, 10 });
-        dialogVm.Items.First(i => i.Number == 1).TextValue.Should().Be("255");
+    dialogVm.Items.First(i => i.Number == 1).TextValue.Should().Be("255.000");
     }
 
     [Fact]
@@ -149,9 +149,9 @@ public class MainWindowViewModel_GrblSettingsTests
         item10.TextValue = "1.5";
         await dialogVm.ApplyCommand.Execute().ToTask();
 
-        serial.Writes.Should().Contain("$$"); // initial request
-        serial.Writes.Should().Contain("$10=1.5");
-        serial.Writes.Should().NotContain("$11=2");
+    serial.Writes.Should().Contain("$$"); // initial request
+    serial.Writes.Should().Contain("$10=1.500");
+    serial.Writes.Should().NotContain("$11=2.000");
 
         // Close dialog
         tcs.SetResult(true);

@@ -69,6 +69,26 @@ public class FileViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> StartCommand { get; }
     public ReactiveCommand<Unit, Unit> PauseCommand { get; }
     public ReactiveCommand<Unit, Unit> GotoCommand { get; }
+    public ReactiveCommand<Unit, Unit> FindNextCommand { get; }
+    public ReactiveCommand<Unit, Unit> FindPrevCommand { get; }
+
+    // Search state
+    private string _searchQuery = string.Empty;
+    private int _searchMatchCount;
+    private int _searchMatchIndex = -1; // 0-based position in matches
+    private readonly System.Collections.Generic.List<int> _matchIndices = new();
+    public string SearchQuery
+    {
+        get => _searchQuery;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _searchQuery, value);
+            _ = RecomputeMatchesAsync();
+        }
+    }
+    public int SearchMatchCount { get => _searchMatchCount; private set => this.RaiseAndSetIfChanged(ref _searchMatchCount, value); }
+    public int SearchMatchIndex { get => _searchMatchIndex; private set { this.RaiseAndSetIfChanged(ref _searchMatchIndex, value); this.RaisePropertyChanged(nameof(SearchStatus)); } }
+    public string SearchStatus => (SearchMatchCount <= 0 || SearchMatchIndex < 0) ? "0/0" : $"{SearchMatchIndex + 1}/{SearchMatchCount}";
 
     public FileViewModel(ILogger<FileViewModel> logger, IGCodeParser parser, IGCodeSender sender, IDialogService dialogs, ISettingsService settings, IGCodePathBuilder pathBuilder)
     {
@@ -89,9 +109,15 @@ public class FileViewModel : ReactiveObject
         OpenCommand = ReactiveCommand.CreateFromTask(OpenAsync, canNotSending);
         SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync, this.WhenAnyValue(x => x.FileLength).Select(n => n > 0).CombineLatest(canNotSending, (a,b) => a && b));
         ClearCommand = ReactiveCommand.Create(Clear, canNotSending);
-    StartCommand = ReactiveCommand.Create(Start, this.WhenAnyValue(x => x.FileLength, x => x.IsBusy, (n, busy) => n > 0 && !busy));
-    PauseCommand = ReactiveCommand.Create(Pause, this.WhenAnyValue(x => x.IsBusy));
+        StartCommand = ReactiveCommand.Create(Start, this.WhenAnyValue(x => x.FileLength, x => x.IsBusy, (n, busy) => n > 0 && !busy));
+        PauseCommand = ReactiveCommand.Create(Pause, this.WhenAnyValue(x => x.IsBusy));
+        // Goto is available when not busy; bounds are validated within the command
         GotoCommand = ReactiveCommand.CreateFromTask(GotoAsync, canNotSending);
+        FindNextCommand = ReactiveCommand.CreateFromTask(FindNextAsync, canNotSending);
+        FindPrevCommand = ReactiveCommand.CreateFromTask(FindPrevAsync, canNotSending);
+
+        // Recompute matches when lines change and there is a query
+        GCodeLines.CollectionChanged += async (_, __) => { if (!string.IsNullOrWhiteSpace(SearchQuery)) await RecomputeMatchesAsync(); };
 
         _ = InitializeAsync();
     }
@@ -117,7 +143,9 @@ public class FileViewModel : ReactiveObject
     {
         var s = await _settings.LoadAsync();
         var startDir = s.LastGCodeDirectory;
-    var files = await _dialogs.OpenFilesAsync("Open G-Code", startDir, new[] { "*.nc;*.gcode;*.tap;*.ngc;*.gco;*.gc" }, allowMultiple: false);
+        // Use explicit filter format: "Name|*.ext;*.ext"; keep StorageProvider robust to glob-only too
+        var gcodeFilter = "G-Code (*.nc;*.gcode;*.tap;*.ngc;*.gco;*.gc)|*.nc;*.gcode;*.tap;*.ngc;*.gco;*.gc";
+        var files = await _dialogs.OpenFilesAsync("Open G-Code", startDir, new[] { gcodeFilter, "All files|*.*" }, allowMultiple: false);
         if (files == null || files.Length == 0) return;
         var file = files[0];
         string[] lines;
@@ -150,11 +178,12 @@ public class FileViewModel : ReactiveObject
             await _dialogs.ShowWarningsAsync(header, _parser.Warnings);
         }
 
-        // Popular colecciones
+    // Popular colecciones
         GCodeLines.Clear();
         foreach (var l in lines) GCodeLines.Add(l);
         _sender.Load(lines);
         UpdateFromSender();
+    await RecomputeMatchesAsync();
 
         CurrentFileName = Path.GetFileName(file);
 
@@ -188,8 +217,9 @@ public class FileViewModel : ReactiveObject
     {
         var s = await _settings.LoadAsync();
         var startDir = s.LastGCodeDirectory;
-    var defaultName = string.IsNullOrWhiteSpace(CurrentFileName) ? "output.nc" : CurrentFileName;
-    var path = await _dialogs.SaveFileAsync("Save G-Code", startDir, defaultName, null);
+        var defaultName = string.IsNullOrWhiteSpace(CurrentFileName) ? "output.nc" : CurrentFileName;
+        var gcodeFilter = "G-Code (*.nc;*.gcode;*.tap;*.ngc;*.gco;*.gc)|*.nc;*.gcode;*.tap;*.ngc;*.gco;*.gc";
+        var path = await _dialogs.SaveFileAsync("Save G-Code", startDir, defaultName, new[] { gcodeFilter, "All files|*.*" });
         if (string.IsNullOrEmpty(path)) return;
         try
         {
@@ -209,12 +239,16 @@ public class FileViewModel : ReactiveObject
 
     private void Clear()
     {
-        _sender.Clear();
+    _sender.Clear();
         GCodeLines.Clear();
         ParsedCommands = null;
         GeometryData = null;
         UpdateFromSender();
         CurrentFileName = string.Empty;
+    _matchIndices.Clear();
+    SearchMatchCount = 0;
+    SearchMatchIndex = -1;
+    this.RaisePropertyChanged(nameof(SearchStatus));
     }
 
     private void Start()
@@ -231,10 +265,11 @@ public class FileViewModel : ReactiveObject
 
     private async Task GotoAsync()
     {
-        var input = await _dialogs.PromptNumberAsync("Go to line", "Enter 0-based line index", defaultValue: FilePosition, min: 0, max: FileLength);
+        var max = FileLength > 0 ? FileLength - 1 : (int?)null;
+        var input = await _dialogs.PromptNumberAsync("Go to line", "Enter 0-based line index", defaultValue: FilePosition, min: 0, max: max);
         if (input == null) return;
         var idx = (int)input.Value;
-        if (idx < 0 || idx > FileLength) return;
+        if (idx < 0 || idx >= FileLength) return;
         _sender.Goto(idx);
         UpdateFromSender();
     }
@@ -251,5 +286,58 @@ public class FileViewModel : ReactiveObject
             }
         }
         catch { /* ignore persistence errors in UI thread */ }
+    }
+
+    private Task RecomputeMatchesAsync()
+    {
+        _matchIndices.Clear();
+        SearchMatchIndex = -1;
+        SearchMatchCount = 0;
+        var q = SearchQuery;
+        if (string.IsNullOrWhiteSpace(q)) { this.RaisePropertyChanged(nameof(SearchStatus)); return Task.CompletedTask; }
+
+        for (int i = 0; i < GCodeLines.Count; i++)
+        {
+            var line = GCodeLines[i];
+            if (line?.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)
+                _matchIndices.Add(i);
+        }
+        SearchMatchCount = _matchIndices.Count;
+        if (SearchMatchCount > 0)
+        {
+            // pick the first match at or after current position
+            var idx = _matchIndices.FindIndex(x => x >= FilePosition);
+            SearchMatchIndex = idx >= 0 ? idx : 0;
+        }
+        else
+        {
+            SearchMatchIndex = -1;
+        }
+        this.RaisePropertyChanged(nameof(SearchStatus));
+        return Task.CompletedTask;
+    }
+
+    private Task FindNextAsync()
+    {
+        if (_matchIndices.Count == 0) return Task.CompletedTask;
+        var pos = SearchMatchIndex;
+        pos = (pos + 1) % _matchIndices.Count;
+        SearchMatchIndex = pos;
+        var target = _matchIndices[pos];
+        _sender.Goto(target);
+        UpdateFromSender();
+        return Task.CompletedTask;
+    }
+
+    private Task FindPrevAsync()
+    {
+        if (_matchIndices.Count == 0) return Task.CompletedTask;
+        var pos = SearchMatchIndex;
+        pos = (pos - 1 + _matchIndices.Count) % _matchIndices.Count;
+        SearchMatchIndex = pos;
+        var target = _matchIndices[pos];
+        _sender.Goto(target);
+        UpdateFromSender();
+        return Task.CompletedTask;
     }
 }

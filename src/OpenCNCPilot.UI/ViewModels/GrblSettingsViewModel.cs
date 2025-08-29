@@ -32,7 +32,7 @@ public class GrblSettingItem : ReactiveObject
         Name = name;
         Unit = unit;
         Description = description;
-        textValue = value.ToString(OpenCNCPilot.Core.Constants.DecimalOutputFormat);
+    textValue = value.ToString("F3", OpenCNCPilot.Core.Constants.DecimalOutputFormat);
     }
 }
 
@@ -100,7 +100,8 @@ public class GrblSettingsViewModel : ReactiveObject
             return;
         }
 
-        if (!double.TryParse(m.Groups[2].Value, System.Globalization.NumberStyles.Float, parseFormat, out var value))
+        var raw = m.Groups[2].Value.Replace(',', '.');
+        if (!double.TryParse(raw, System.Globalization.NumberStyles.Float, parseFormat, out var value))
         {
             logger?.LogDebug("GRBL settings: invalid value in line: {Line}", line);
             return;
@@ -115,7 +116,7 @@ public class GrblSettingsViewModel : ReactiveObject
         }
         else
         {
-            existing.TextValue = value.ToString(OpenCNCPilot.Core.Constants.DecimalOutputFormat);
+            existing.TextValue = value.ToString("F3", OpenCNCPilot.Core.Constants.DecimalOutputFormat);
         }
 
         current[number] = value;
@@ -136,7 +137,7 @@ public class GrblSettingsViewModel : ReactiveObject
             if (current.TryGetValue(item.Number, out var old) && Math.Abs(old - newval) < 1e-12)
                 continue;
 
-            SendLine?.Invoke($"${item.Number}={newval.ToString(OpenCNCPilot.Core.Constants.DecimalOutputFormat)}");
+            SendLine?.Invoke($"${item.Number}={newval.ToString("F3", OpenCNCPilot.Core.Constants.DecimalOutputFormat)}");
             current[item.Number] = newval;
             await Task.Delay(SendDelayMs);
         }
@@ -173,7 +174,7 @@ public class GrblSettingsViewModel : ReactiveObject
                 await dialogService.AlertAsync("Invalid value", $"Value \"{item.TextValue}\" is invalid for Setting \"{item.Name}\"");
                 return;
             }
-            lines.Add($"${item.Number}={newval.ToString(OpenCNCPilot.Core.Constants.DecimalOutputFormat)}");
+            lines.Add($"${item.Number}={newval.ToString("F3", OpenCNCPilot.Core.Constants.DecimalOutputFormat)}");
         }
 
         await File.WriteAllLinesAsync(path, lines);

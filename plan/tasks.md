@@ -1,6 +1,6 @@
 # Tasks — Previsualización de G-code en Avalonia
 
-Estado: In Progress
+Estado: DONE
 Owner:
 Fecha: 2025-08-29
 
@@ -142,6 +142,13 @@ Fecha: 2025-08-29
 - Descripción: Añadir diferencias clave (OpenGL/Skia, propiedades StyledProperty).
 - Aceptación: Guía actualizada.
 - Dep: 2.x
+- Estimación: XS
+- Estado: DONE
+
+6.3 UX: Búsqueda en File tab con resaltado y atajos
+- Descripción: Resaltar coincidencias en la lista de G-code con un control ligero y añadir atajos F3/Shift+F3 para navegar entre coincidencias, manteniendo la virtualización.
+- Aceptación: Coincidencias resaltadas; navegación F3/Shift+F3 operativa; suite de tests completa en verde.
+- Dep: 3.1
 - Estimación: XS
 - Estado: DONE
 

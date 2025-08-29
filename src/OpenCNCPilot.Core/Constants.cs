@@ -16,7 +16,7 @@ public static class Constants
     // File filters for different file types
     public const string FileFilterGCode = "GCode|*.tap;*.nc;*.ngc|All Files|*.*";
     public const string FileFilterHeightMap = "Height Maps|*.hmap|All Files|*.*";
-    public const string FileFilterSettings = "Grbl settings|*.gbl;*.nc;*.ngc|All Files|*.*";
+    public const string FileFilterSettings = "Grbl settings|*.txt;*.gbl;*.nc;*.ngc|All Files|*.*";
 
     public const string LogFile = "log.txt";
 
