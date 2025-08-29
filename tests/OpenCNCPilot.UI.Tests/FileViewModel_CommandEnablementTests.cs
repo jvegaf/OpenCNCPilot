@@ -64,7 +64,9 @@ public class FileViewModel_CommandEnablementTests
         public System.Collections.Generic.List<string> LastWarnings { get; } = new();
         public System.Threading.Tasks.Task<string[]?> OpenFilesAsync(string title, string? initialDirectory = null, string[]? filters = null, bool allowMultiple = false) => System.Threading.Tasks.Task.FromResult(NextOpenFiles);
         public System.Threading.Tasks.Task<string?> SaveFileAsync(string title, string? initialDirectory = null, string? defaultFileName = null, string[]? filters = null) => System.Threading.Tasks.Task.FromResult<string?>(null);
-        public System.Threading.Tasks.Task<string?> PickFolderAsync(string title, string? initialDirectory = null) => System.Threading.Tasks.Task.FromResult<string?>(null);
+        public System.Threading.Tasks.Task<string?> PickFolderAsync(string title, string? initialDirectory = null)
+            => System.Threading.Tasks.Task.FromResult<string?>(null);
+
         public System.Threading.Tasks.Task AlertAsync(string title, string message, string okText = "OK") => System.Threading.Tasks.Task.CompletedTask;
         public System.Threading.Tasks.Task<bool> ConfirmAsync(string title, string message, string confirmText = "OK", string cancelText = "Cancel") => System.Threading.Tasks.Task.FromResult(false);
         public System.Threading.Tasks.Task<double?> PromptNumberAsync(string title, string message, double? defaultValue = null, double? min = null, double? max = null, int decimals = 3) => System.Threading.Tasks.Task.FromResult<double?>(null);
@@ -112,3 +114,4 @@ public class FileViewModel_CommandEnablementTests
         vm.GotoCommand.CanExecute.FirstAsync().Wait().Should().BeTrue();
     }
 }
+
