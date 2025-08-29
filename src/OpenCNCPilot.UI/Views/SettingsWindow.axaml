@@ -52,12 +52,16 @@
       <ac:NumericUpDown Grid.Row="9" Grid.Column="1" Value="{Binding ViewerGridMinPixelStep}"
         Minimum="4" Maximum="200" Increment="2" FormatString="F0"/>
 
-      <TextBlock Grid.Row="10" Grid.Column="0" Text="Enable Simplification:" VerticalAlignment="Center"/>
-      <ToggleSwitch Grid.Row="10" Grid.Column="1" IsChecked="{Binding ViewerEnableSimplification}"/>
+  <TextBlock Grid.Row="10" Grid.Column="0" Text="Enable Simplification:" VerticalAlignment="Center"/>
+  <ToggleSwitch Grid.Row="10" Grid.Column="1" IsChecked="{Binding ViewerEnableSimplification}"
+        ToolTip.Tip="Reduce vértices de polilíneas grandes (Douglas–Peucker) para mejorar rendimiento."/>
 
-      <TextBlock Grid.Row="11" Grid.Column="0" Text="Simplification Epsilon (mm):" VerticalAlignment="Center"/>
+      <TextBlock Grid.Row="11" Grid.Column="0" Text="Simplification Epsilon (mm):" VerticalAlignment="Center"
+                 IsEnabled="{Binding ViewerEnableSimplification}"/>
       <ac:NumericUpDown Grid.Row="11" Grid.Column="1" Value="{Binding ViewerSimplificationEpsilon}"
-        Minimum="0" Maximum="100" Increment="0.01" FormatString="F2"/>
+        Minimum="0" Maximum="100" Increment="0.01" FormatString="F2"
+        IsEnabled="{Binding ViewerEnableSimplification}"
+        ToolTip.Tip="Tolerancia de simplificación: mayor valor = más reducción de puntos (posible pérdida de detalle)."/>
 
       <TextBlock Grid.Row="12" Grid.Column="0" Text="Rapid Color (ARGB):" VerticalAlignment="Center"/>
       <StackPanel Grid.Row="12" Grid.Column="1" Orientation="Horizontal" Spacing="8">

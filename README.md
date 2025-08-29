@@ -69,6 +69,10 @@ Since this project did get some attention, I'll include a donation button. Getti
 Please note that my programs will always be (ad-)free
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=7F783UGMYHRWN)
 
+## Testing (Modern UI branch)
+
+Consulta `docs/TESTING.md` para categorías de pruebas, filtros y comandos rápidos (incluye `Performance` y smokes `UI-GL`). En CI se excluyen `Performance` y `UI-GL` por defecto.
+
 ## Chatmodes de GitHub Copilot (Desarrollo)
 
 Para acelerar el flujo de trabajo (.NET 8, Avalonia, TDD y refactor), este repo incluye chatmodes curados desde awesome-copilot.

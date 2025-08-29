@@ -125,7 +125,7 @@ Fecha: 2025-08-29
 - Aceptación: CI verde en Linux/Windows.
 - Dep: 2.x
 - Estimación: XS
-- Estado: TODO
+- Estado: DONE
 
 ---
 
