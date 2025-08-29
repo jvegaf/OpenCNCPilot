@@ -13,6 +13,7 @@ public class AppSettings
     public string DefaultComPort { get; set; } = string.Empty;
     public int BaudRate { get; set; } = 115200;
     public string LastGCodeDirectory { get; set; } = string.Empty;
+    public bool PauseFileOnHold { get; set; } = false;
     public bool IgnoreAdditionalAxes { get; set; } = true;
     public double ViewerRotateSensitivity { get; set; } = 0.3;
     public double ViewerPanSensitivity { get; set; } = 0.02;

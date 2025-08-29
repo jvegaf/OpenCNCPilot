@@ -25,6 +25,7 @@ public class MainWindowViewModel : ReactiveObject
     private readonly IDialogService _dialogService;
     private readonly ISettingsService _settingsService;
     private readonly IGCodeParser _gcodeParser;
+    public FileViewModel FileTab { get; }
 
     private ReadOnlyObservableCollection<Command>? _gcodeCommands;
     private string _selectedPort = string.Empty;
@@ -51,14 +52,40 @@ public class MainWindowViewModel : ReactiveObject
     private double _probeAreaWidth = 100.0;
     private double _probeAreaHeight = 100.0;
 
-    public MainWindowViewModel(ILogger<MainWindowViewModel> logger, ISerialPortService serialPortService, IDialogService dialogService, ISettingsService settingsService, IGCodeParser gcodeParser)
+    private sealed class NoopSender : OpenCNCPilot.Hardware.Services.IGCodeSender
+    {
+        public OpenCNCPilot.Hardware.Services.GCodeSenderState State => OpenCNCPilot.Hardware.Services.GCodeSenderState.Idle;
+        public int FilePosition => 0;
+        public int FileLength => 0;
+        public TimeSpan Runtime => TimeSpan.Zero;
+        public TimeSpan EstimatedDuration => TimeSpan.Zero;
+        public bool PauseOnHold { get; set; }
+        public bool IsSending => false;
+        public string CurrentLineText => string.Empty;
+        public event EventHandler<OpenCNCPilot.Hardware.Services.GCodeSenderState>? StateChanged;
+        public event EventHandler<int>? PositionChanged;
+        public event EventHandler<string>? ErrorOccurred;
+        public void Clear() { }
+        public void Dispose() { }
+        public void Goto(int lineIndex) { }
+        public void Load(System.Collections.Generic.IEnumerable<string> lines) { }
+        public void Pause() { }
+        public void Start() { }
+    }
+
+    public MainWindowViewModel(ILogger<MainWindowViewModel> logger, ISerialPortService serialPortService, IDialogService dialogService, ISettingsService settingsService, IGCodeParser gcodeParser, FileViewModel? fileTab = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _serialPortService = serialPortService ?? throw new ArgumentNullException(nameof(serialPortService));
         _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         _gcodeParser = gcodeParser ?? throw new ArgumentNullException(nameof(gcodeParser));
-
+        FileTab = fileTab ?? new FileViewModel(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<FileViewModel>.Instance,
+            _gcodeParser,
+            new NoopSender(),
+            _dialogService,
+            _settingsService);
         // Initialize commands
         var canConnectObs = this
             .WhenAnyValue(x => x.SelectedPort, x => x.IsConnected,
@@ -200,7 +227,7 @@ public class MainWindowViewModel : ReactiveObject
                     await _settingsService.SaveAsync(settings);
                 }
 
-                var lines = await File.ReadAllLinesAsync(file);
+                var lines = await System.IO.File.ReadAllLinesAsync(file);
                 try
                 {
                     _gcodeParser.IgnoreAdditionalAxes = settings.IgnoreAdditionalAxes;
@@ -256,6 +283,12 @@ public class MainWindowViewModel : ReactiveObject
         _ = LoadViewerSettingsAsync();
 
         _logger.LogInformation("MainWindowViewModel initialized");
+    }
+
+    // Backwards-compatible overload for tests and callers that haven't been updated yet
+    public MainWindowViewModel(ILogger<MainWindowViewModel> logger, ISerialPortService serialPortService, IDialogService dialogService, ISettingsService settingsService, IGCodeParser gcodeParser)
+        : this(logger, serialPortService, dialogService, settingsService, gcodeParser, null)
+    {
     }
 
     #region Properties

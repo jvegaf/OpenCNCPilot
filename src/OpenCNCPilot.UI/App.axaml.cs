@@ -57,6 +57,7 @@ public partial class App : Application
 
         // Hardware services
         services.AddSingleton<ISerialPortService, SerialPortService>();
+    services.AddSingleton<IGCodeSender, GCodeSender>();
 
         // Dialogs
         services.AddSingleton<IDialogService>(sp =>
@@ -75,6 +76,7 @@ public partial class App : Application
         services.AddTransient<ViewModels.SettingsWindowViewModel>();
     services.AddTransient<ViewModels.GrblSettingsViewModel>();
     services.AddTransient<ViewModels.EditMacroItemViewModel>();
+    services.AddTransient<ViewModels.FileViewModel>();
     }
 
     public static IServiceProvider? Services

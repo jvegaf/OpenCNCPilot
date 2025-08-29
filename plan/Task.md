@@ -18,7 +18,7 @@ Este documento sigue el prompt “GitHub Issue Planning & Project Automation” 
   - Se deshabilitan acciones incompatibles durante envío.
   - Tests unitarios del sender y del VM cubren escenarios clave.
 - Key Milestones:
-  1. Enabler: `IGCodeSender` implementado y testeado (MVP una línea en vuelo).
+  1. Enabler: `IGCodeSender` (interfaz) creada y registrada en DI; implementación inicial `GCodeSender` lista. Siguiente: tests (MVP una línea en vuelo).
   2. `FileViewModel` + comandos y bindings básicos.
   3. `FilePanel.axaml` con controles, bindings y virtualización de lista.
   4. Integración con `MainWindowViewModel` y `GCodeViewport` (autofit).
@@ -111,66 +111,66 @@ Título sugerido: Feature: Pestaña “File” (Avalonia)
 ### Enabler 1: IGCodeSender
 
 - Requisitos Técnicos:
-  - [ ] Interfaz (`State`, `FilePosition`, `FileLength`, `Runtime`, `EstimatedDuration`, `PauseOnHold`, `IsSending`, `CurrentLineText`).
-  - [ ] Métodos (`Load`, `Start`, `Pause`, `Clear`, `Goto`, `Dispose`).
-  - [ ] Eventos/Observables (`StateChanged`, `PositionChanged`, `ErrorOccurred`).
-  - [ ] Protocolo envío: una línea en vuelo; usa `ISerialPortService.WriteLine` y consume `DataReceived` (`ok`/`error:`).
-  - [ ] `PauseOnHold` en `M0/M1/M30` al finalizar línea (tras `ok`).
-  - [ ] Validaciones: `Goto` prohibido en `Sending`; rango; `Start` sin líneas o sin puerto abierto.
-  - [ ] Estimación duración MVP.
+  - [x] Interfaz (`State`, `FilePosition`, `FileLength`, `Runtime`, `EstimatedDuration`, `PauseOnHold`, `IsSending`, `CurrentLineText`).
+  - [x] Métodos (`Load`, `Start`, `Pause`, `Clear`, `Goto`, `Dispose`).
+  - [x] Eventos/Observables (`StateChanged`, `PositionChanged`, `ErrorOccurred`).
+  - [x] Protocolo envío: una línea en vuelo; usa `ISerialPortService.WriteLine` y consume `DataReceived` (`ok`/`error:`).
+  - [x] `PauseOnHold` en `M0/M1/M30` al finalizar línea (tras `ok`).
+  - [x] Validaciones: `Goto` prohibido en `Sending`; rango; `Start` sin líneas o sin puerto abierto.
+  - [x] Estimación duración MVP.
 - Tareas:
-  - [ ] Definir interfaz en `src/OpenCNCPilot.Hardware/Services/`.
-  - [ ] Implementación concreta con suscripción al puerto.
-  - [ ] Tests unitarios (comportamientos y errores).
+  - [x] Definir interfaz en `src/OpenCNCPilot.Hardware/Services/`.
+  - [x] Implementación concreta con suscripción al puerto.
+  - [x] Tests unitarios (comportamientos y errores) básicos en `OpenCNCPilot.Integration.Tests`.
 
 ### Enabler 2: Persistencia de Settings
 
 - Requisitos Técnicos:
-  - [ ] Añadir `LastGCodeDirectory: string`, `PauseFileOnHold: bool` en `AppSettings`.
-  - [ ] `JsonSettingsService` guarda/carga ambos campos.
+  - [x] Añadir `LastGCodeDirectory: string`, `PauseFileOnHold: bool` en `Settings.settings` (MVP).
+  - [x] `JsonSettingsService` guarda/carga ambos campos (rama Avalonia).
 - Tareas:
-  - [ ] Actualizar modelo y servicio.
+  - [x] Actualizar modelo y servicio.
   - [ ] Tests de persistencia.
 
 ### Story 1: Cargar/Guardar/Limpiar G‑Code
 
 - Acceptance Criteria:
   - [ ] `OpenCommand` abre, lee, parsea, muestra warnings, setea `Commands` y `GCodeLines`, actualiza settings y `FitRequestId`.
-  - [ ] `SaveCommand` guarda líneas en ruta elegida.
-  - [ ] `ClearCommand` limpia estado y viewport; `sender.Clear()`.
+  - [x] `SaveCommand` guarda líneas en ruta elegida.
+  - [x] `ClearCommand` limpia estado y viewport; `sender.Clear()`.
 - Tareas:
-  - [ ] Integrar `IDialogService` (open/save) y `IGCodeParser`.
-  - [ ] Mapear warnings a UI (alerta).
+  - [x] Integrar `IDialogService` (open/save) y `IGCodeParser`.
+  - [ ] Mapear warnings a UI (alerta) desde `OpenCommand` (actualmente se muestran en `MainWindowViewModel.LoadGCodeFileCommand`).
   - [ ] Refrescar viewport y banderas.
 
 ### Story 2: Envío Start/Pause con GRBL
 
 - Acceptance Criteria:
-  - [ ] `StartCommand` inicia envío secuencial y actualiza `Runtime`.
-  - [ ] `PauseCommand` pausa manteniendo posición.
-  - [ ] Manejo `ok`/`error:` acorde a MVP.
+  - [x] `StartCommand` inicia envío secuencial y actualiza `Runtime`.
+  - [x] `PauseCommand` pausa manteniendo posición.
+  - [x] Manejo `ok`/`error:` acorde a MVP.
 - Tareas:
-  - [ ] Comandos y binding con `IGCodeSender`.
-  - [ ] Actualización de estado y tiempos.
+  - [x] Comandos y binding con `IGCodeSender`.
+  - [x] Actualización de estado y tiempos.
 
 ### Story 3: Go To y Pause on M0/M1/M30
 
 - Acceptance Criteria:
-  - [ ] `GotoCommand` pide número, valida rango, y ejecuta `sender.Goto` si permitido.
-  - [ ] `PauseOnHold` detiene tras línea con `M0/M1/M30`.
+  - [x] `GotoCommand` pide número, valida rango, y ejecuta `sender.Goto` si permitido.
+  - [x] `PauseOnHold` detiene tras línea con `M0/M1/M30`.
 - Tareas:
-  - [ ] `PromptNumberAsync` y validación.
-  - [ ] Detección M‑codes en sender.
+  - [x] `PromptNumberAsync` y validación.
+  - [x] Detección M‑codes en sender.
 
 ### Story 4: UI FilePanel + VM + Estado
 
 - Acceptance Criteria:
-  - [ ] Botones y `CheckBox` con `IsEnabled` según estado.
-  - [ ] `ListBox` con virtualización, `SelectedIndex` sigue `FilePosition`.
-  - [ ] Mostrar `FilePosition/FileLength`, `Runtime/EstimatedDuration`.
+  - [x] Botones y `CheckBox` con `IsEnabled` según estado (via `ReactiveCommand` y `CanExecute`).
+  - [ ] `ListBox` con virtualización, `SelectedIndex` sigue `FilePosition` (virtualización pendiente; `SelectedIndex` implementado).
+  - [x] Mostrar `FilePosition/FileLength`, `Runtime/EstimatedDuration`.
 - Tareas:
-  - [ ] `FilePanel.axaml` + `.axaml.cs` mínimo.
-  - [ ] `FileViewModel` y bindings.
+  - [x] `FilePanel.axaml` + `.axaml.cs` mínimo.
+  - [x] `FileViewModel` y bindings.
 
 ### Story 5: Integración Viewport y Autofit
 
@@ -245,6 +245,7 @@ Tipos:
 - Enabler 2 — Settings
   - [ ] Ampliar `AppSettings` con `LastGCodeDirectory`, `PauseFileOnHold`.
   - [ ] Persistencia en `JsonSettingsService` + tests.
+  - [x] MVP: Añadidos `LastGCodeDirectory` y `PauseFileOnHold` a `OpenCNCPilot/Properties/Settings.settings` (legado) para compat.
 - Story 1 — Cargar/Guardar/Limpiar
   - [ ] `OpenCommand`: diálogo, lectura, parseo, warnings.
   - [ ] Poblar `Commands` para viewport y `GCodeLines`.
@@ -265,10 +266,22 @@ Tipos:
   - [ ] Bind `Commands` a `GCodeViewport`.
   - [ ] `FitRequestId` tras `Open`/`Clear`.
 - Integración y DI
-  - [ ] Registrar `IGCodeSender` y `FileViewModel` en `Program.cs`.
-  - [ ] Exponer `File` en `MainWindowViewModel`.
+  - [x] Registrar `IGCodeSender` en `App.axaml.cs`.
+  - [x] Registrar `FileViewModel`.
+  - [x] Exponer `File` en `MainWindowViewModel`.
   - [ ] Eliminar duplicación previa de carga/limpieza.
-- Documentación
+
+Nota de progreso (2025-08-29):
+- Creada `IGCodeSender` y primera implementación `GCodeSender` con envío una‑línea‑en‑vuelo, manejo `ok/error:`, pausa opcional por `M0/M1/M30`, estimación de duración MVP y eventos. Registrado en DI.
+- Tests agregados para `GCodeSender`: Start→ok→fin, Pause, PauseOnHold, error:, Goto. Resultado: todos verdes.
+- Implementados `FileViewModel` (Open/Save/Clear/Start/Pause/Goto, `PauseOnHold` persistente) y `FilePanel.axaml` (bindings a comandos, indicadores de estado, `ListBox` con `ItemsSource` y `SelectedIndex`).
+- Integrado `FilePanel` en `MainWindow.axaml`; `MainWindowViewModel` ahora expone `FileTab` (se añadió sobrecarga retro‑compatible del constructor y un `NoopSender` para no romper tests).
+- `AppSettings` ampliado con `PauseFileOnHold` y persistencia en `JsonSettingsService`; `FileViewModel` carga/guarda la preferencia.
+- DI actualizado para registrar `FileViewModel` y `IGCodeSender`.
+- Build y tests locales: PASS (Core, Integration, UI‑Tests).
+- Pendientes inmediatos: integrar `GCodeViewport` y `FitRequestId` tras open/clear; virtualización de la `ListBox`; unificar lógica de carga/limpieza (evitar duplicación entre `FileViewModel.OpenCommand` y `MainWindowViewModel.LoadGCodeFileCommand`); tests de persistencia de settings; mostrar warnings desde `FileViewModel.OpenCommand`.
+
+Documentación
   - [ ] Actualizar `docs/migration_guide.md` (pestaña “File”).
   - [ ] Documentar contrato/estados de `IGCodeSender`.
 

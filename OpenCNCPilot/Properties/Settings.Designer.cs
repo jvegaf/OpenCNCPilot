@@ -9,20 +9,20 @@
 //------------------------------------------------------------------------------
 
 namespace OpenCNCPilot.Properties {
-    
-    
+
+
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.0.3.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
-        
+
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
-        
+
         public static Settings Default {
             get {
                 return defaultInstance;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("COM3")]
@@ -34,7 +34,31 @@ namespace OpenCNCPilot.Properties {
                 this["SerialPortName"] = value;
             }
         }
-        
+
+            [global::System.Configuration.UserScopedSettingAttribute()]
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.Configuration.DefaultSettingValueAttribute("")]
+            public string LastGCodeDirectory {
+                get {
+                    return ((string)(this["LastGCodeDirectory"]));
+                }
+                set {
+                    this["LastGCodeDirectory"] = value;
+                }
+            }
+
+            [global::System.Configuration.UserScopedSettingAttribute()]
+            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+            [global::System.Configuration.DefaultSettingValueAttribute("False")]
+            public bool PauseFileOnHold {
+                get {
+                    return ((bool)(this["PauseFileOnHold"]));
+                }
+                set {
+                    this["PauseFileOnHold"] = value;
+                }
+            }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("115200")]
@@ -46,7 +70,7 @@ namespace OpenCNCPilot.Properties {
                 this["SerialPortBaud"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Serial")]
@@ -58,7 +82,7 @@ namespace OpenCNCPilot.Properties {
                 this["ConnectionType"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("120")]
@@ -70,7 +94,7 @@ namespace OpenCNCPilot.Properties {
                 this["ControllerBufferSize"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("100")]
@@ -82,7 +106,7 @@ namespace OpenCNCPilot.Properties {
                 this["StatusPollInterval"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1")]
@@ -94,7 +118,7 @@ namespace OpenCNCPilot.Properties {
                 this["ViewportArcSplit"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -106,7 +130,7 @@ namespace OpenCNCPilot.Properties {
                 this["EnableCodePreview"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("5")]
@@ -118,7 +142,7 @@ namespace OpenCNCPilot.Properties {
                 this["ProbeSafeHeight"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1")]
@@ -130,7 +154,7 @@ namespace OpenCNCPilot.Properties {
                 this["ProbeMinimumHeight"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("5")]
@@ -142,7 +166,7 @@ namespace OpenCNCPilot.Properties {
                 this["ProbeMaxDepth"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -154,7 +178,7 @@ namespace OpenCNCPilot.Properties {
                 this["AbortOnProbeFail"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("20")]
@@ -166,7 +190,7 @@ namespace OpenCNCPilot.Properties {
                 this["ProbeFeed"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1")]
@@ -178,7 +202,7 @@ namespace OpenCNCPilot.Properties {
                 this["ArcToLineSegmentLength"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("5")]
@@ -190,7 +214,7 @@ namespace OpenCNCPilot.Properties {
                 this["SplitSegmentLength"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("8080")]
@@ -202,7 +226,7 @@ namespace OpenCNCPilot.Properties {
                 this["WebServerPort"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1000")]
@@ -214,7 +238,7 @@ namespace OpenCNCPilot.Properties {
                 this["JogFeed"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("10")]
@@ -226,7 +250,7 @@ namespace OpenCNCPilot.Properties {
                 this["JogDistance"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -238,7 +262,7 @@ namespace OpenCNCPilot.Properties {
                 this["LogTraffic"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Probe and set Zero:G38.2Z-10F20\r\nG92Z0;")]
@@ -250,7 +274,7 @@ namespace OpenCNCPilot.Properties {
                 this["Macros"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -262,7 +286,7 @@ namespace OpenCNCPilot.Properties {
                 this["GCodeIncludeSpindle"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -274,7 +298,7 @@ namespace OpenCNCPilot.Properties {
                 this["GCodeIncludeDwell"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -286,7 +310,7 @@ namespace OpenCNCPilot.Properties {
                 this["GCodeIncludeMEnd"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("250")]
@@ -298,7 +322,7 @@ namespace OpenCNCPilot.Properties {
                 this["JogFeedCtrl"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("1")]
@@ -310,7 +334,7 @@ namespace OpenCNCPilot.Properties {
                 this["JogDistanceCtrl"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -322,7 +346,7 @@ namespace OpenCNCPilot.Properties {
                 this["PauseFileOnHold"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0.95")]
@@ -334,7 +358,7 @@ namespace OpenCNCPilot.Properties {
                 this["ProbeXAxisWeight"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -346,7 +370,7 @@ namespace OpenCNCPilot.Properties {
                 this["ShowStatusLines"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("10")]
@@ -358,7 +382,7 @@ namespace OpenCNCPilot.Properties {
                 this["ConsoleFadeTime"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
@@ -370,7 +394,7 @@ namespace OpenCNCPilot.Properties {
                 this["ToolLengthSetterPos"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("10")]
@@ -382,7 +406,7 @@ namespace OpenCNCPilot.Properties {
                 this["SettingsSendDelay"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -394,7 +418,7 @@ namespace OpenCNCPilot.Properties {
                 this["SettingsUpdateRequired"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -406,7 +430,7 @@ namespace OpenCNCPilot.Properties {
                 this["TLSUseActualPos"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -418,7 +442,7 @@ namespace OpenCNCPilot.Properties {
                 this["ManualUseExpressions"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -430,7 +454,7 @@ namespace OpenCNCPilot.Properties {
                 this["FileExpanderOpen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -442,7 +466,7 @@ namespace OpenCNCPilot.Properties {
                 this["EditExpanderOpen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -454,7 +478,7 @@ namespace OpenCNCPilot.Properties {
                 this["OverrideExpanderOpen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -466,7 +490,7 @@ namespace OpenCNCPilot.Properties {
                 this["ProbingExpanderOpen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -478,7 +502,7 @@ namespace OpenCNCPilot.Properties {
                 this["ManualExpanderOpen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -490,7 +514,7 @@ namespace OpenCNCPilot.Properties {
                 this["ManualProbingExpanderOpen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -502,7 +526,7 @@ namespace OpenCNCPilot.Properties {
                 this["MacroExpanderOpen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -514,7 +538,7 @@ namespace OpenCNCPilot.Properties {
                 this["MachineExpanderOpen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -526,7 +550,7 @@ namespace OpenCNCPilot.Properties {
                 this["AboutExpanderOpen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -538,7 +562,7 @@ namespace OpenCNCPilot.Properties {
                 this["DebugExpanderOpen"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("900")]
@@ -550,7 +574,7 @@ namespace OpenCNCPilot.Properties {
                 this["WindowWidth"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("500")]
@@ -562,7 +586,7 @@ namespace OpenCNCPilot.Properties {
                 this["WindowHeight"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -574,7 +598,7 @@ namespace OpenCNCPilot.Properties {
                 this["BackupHeightMap"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0.8")]
@@ -586,7 +610,7 @@ namespace OpenCNCPilot.Properties {
                 this["HeightMapOpacity"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -598,7 +622,7 @@ namespace OpenCNCPilot.Properties {
                 this["EnableEscapeSoftReset"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -610,7 +634,7 @@ namespace OpenCNCPilot.Properties {
                 this["IgnoreAdditionalAxes"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0.1")]
@@ -622,7 +646,7 @@ namespace OpenCNCPilot.Properties {
                 this["GridThickness"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -634,7 +658,7 @@ namespace OpenCNCPilot.Properties {
                 this["SerialPortDTR"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("50;-150;250;-50;150;-250")]
@@ -646,7 +670,7 @@ namespace OpenCNCPilot.Properties {
                 this["ViewPortPos"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("192.168.1.101")]
@@ -658,7 +682,7 @@ namespace OpenCNCPilot.Properties {
                 this["EthernetIP"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("34000")]
@@ -670,7 +694,7 @@ namespace OpenCNCPilot.Properties {
                 this["EthernetPort"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Grbl")]
@@ -694,7 +718,7 @@ namespace OpenCNCPilot.Properties {
                 this["ProbeOffsetX"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]

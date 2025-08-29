@@ -11,6 +11,12 @@
     <Setting Name="ConnectionType" Type="OpenCNCPilot.Communication.ConnectionType" Scope="User">
       <Value Profile="(Default)">Serial</Value>
     </Setting>
+    <Setting Name="LastGCodeDirectory" Type="System.String" Scope="User">
+      <Value Profile="(Default)"></Value>
+    </Setting>
+    <Setting Name="PauseFileOnHold" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
     <Setting Name="ControllerBufferSize" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">120</Value>
     </Setting>
