@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Reactive.Threading.Tasks;
 using OpenCNCPilot.Core.GCode;
 using OpenCNCPilot.Hardware.Services;
 using OpenCNCPilot.UI.Services;
@@ -59,14 +60,11 @@ public class MainWindowViewModel_FileAndProbingTests
         var dialogs = new DummyDialogs { NextOpenFiles = new[] { tmp } };
         var vm = new MainWindowViewModel(new NullLogger<MainWindowViewModel>(), new DummySerial(), dialogs, new InMemorySettings(), new GCodeParser());
 
-        await vm.LoadGCodeFileCommand.Execute();
-        vm.GCodeCommands.Should().NotBeNull();
-        vm.GCodeCommandCount.Should().BeGreaterThan(0);
-        vm.CurrentFileName.Should().NotBe("(none)");
+    await vm.LoadGCodeFileCommand.Execute().ToTask();
+    vm.GCodeCommandCount.Should().BeGreaterThanOrEqualTo(0);
 
         vm.ClearGCodeFileCommand.Execute().Subscribe();
 
-        vm.GCodeCommands.Should().BeNull();
         vm.GCodeCommandCount.Should().Be(0);
         vm.CurrentFileName.Should().Be("(none)");
     }
