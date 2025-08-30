@@ -39,8 +39,11 @@
         </StackPanel>
 
         <!-- Status -->
-        <TextBlock Grid.Column="1" Text="{Binding Status}"
-                   VerticalAlignment="Center" Margin="20,0"/>
+        <StackPanel Grid.Column="1" Orientation="Vertical" Margin="20,0">
+          <TextBlock Text="{Binding Status}" VerticalAlignment="Center"/>
+          <TextBlock Text="{Binding FileTab.LoadTimingSummary}" FontSize="11" Opacity="0.7"/>
+          <TextBlock Text="{Binding FileTab.MoveSummary}" FontSize="11" Opacity="0.7"/>
+        </StackPanel>
 
         <!-- Position Display -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="15" Margin="20,0">

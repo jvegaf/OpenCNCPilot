@@ -32,6 +32,14 @@ public class FileViewModel : ReactiveObject
     private bool _isBusy;
     private bool _pauseOnHold;
     private GeometryData? _geometryData;
+    private bool _isLoading;
+    private double _loadProgress; // 0..1, por ahora se usa como indeterminado
+    private System.Threading.CancellationTokenSource? _loadCts;
+    private int _rapidCount;
+    private int _cutCount;
+    private double _lastLoadReadMs;
+    private double _lastLoadParseMs;
+    private double _lastLoadBuildMs;
 
     public ObservableCollection<string> GCodeLines { get; } = new();
     private ReadOnlyObservableCollection<Command>? _parsedCommands;
@@ -52,6 +60,16 @@ public class FileViewModel : ReactiveObject
         get => _geometryData;
         private set => this.RaiseAndSetIfChanged(ref _geometryData, value);
     }
+    public bool IsLoading
+    {
+        get => _isLoading;
+        private set => this.RaiseAndSetIfChanged(ref _isLoading, value);
+    }
+    public double LoadProgress
+    {
+        get => _loadProgress;
+        private set => this.RaiseAndSetIfChanged(ref _loadProgress, value);
+    }
     public bool PauseOnHold
     {
         get => _pauseOnHold;
@@ -62,6 +80,60 @@ public class FileViewModel : ReactiveObject
             _ = SavePausePreferenceAsync(value);
         }
     }
+    public int RapidCount
+    {
+        get => _rapidCount;
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _rapidCount, value);
+            this.RaisePropertyChanged(nameof(MoveCount));
+            this.RaisePropertyChanged(nameof(MoveSummary));
+        }
+    }
+    public int CutCount
+    {
+        get => _cutCount;
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _cutCount, value);
+            this.RaisePropertyChanged(nameof(MoveCount));
+            this.RaisePropertyChanged(nameof(MoveSummary));
+        }
+    }
+    public int MoveCount => RapidCount + CutCount;
+    public string MoveSummary => MoveCount <= 0 ? "Moves: 0" : $"Moves: {MoveCount} (Rapid: {RapidCount}, Cut: {CutCount})";
+    public double LastLoadReadMs
+    {
+        get => _lastLoadReadMs;
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _lastLoadReadMs, value);
+            this.RaisePropertyChanged(nameof(LastLoadTotalMs));
+            this.RaisePropertyChanged(nameof(LoadTimingSummary));
+        }
+    }
+    public double LastLoadParseMs
+    {
+        get => _lastLoadParseMs;
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _lastLoadParseMs, value);
+            this.RaisePropertyChanged(nameof(LastLoadTotalMs));
+            this.RaisePropertyChanged(nameof(LoadTimingSummary));
+        }
+    }
+    public double LastLoadBuildMs
+    {
+        get => _lastLoadBuildMs;
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _lastLoadBuildMs, value);
+            this.RaisePropertyChanged(nameof(LastLoadTotalMs));
+            this.RaisePropertyChanged(nameof(LoadTimingSummary));
+        }
+    }
+    public double LastLoadTotalMs => LastLoadReadMs + LastLoadParseMs + LastLoadBuildMs;
+    public string LoadTimingSummary => LastLoadTotalMs <= 0 ? string.Empty : $"Load: {LastLoadTotalMs:F0} ms (read {LastLoadReadMs:F0}, parse {LastLoadParseMs:F0}, build {LastLoadBuildMs:F0})";
 
     public ReactiveCommand<Unit, Unit> OpenCommand { get; }
     public ReactiveCommand<Unit, Unit> SaveCommand { get; }
@@ -71,6 +143,7 @@ public class FileViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> GotoCommand { get; }
     public ReactiveCommand<Unit, Unit> FindNextCommand { get; }
     public ReactiveCommand<Unit, Unit> FindPrevCommand { get; }
+    public ReactiveCommand<Unit, Unit> CancelLoadCommand { get; }
 
     // Search state
     private string _searchQuery = string.Empty;
@@ -103,18 +176,19 @@ public class FileViewModel : ReactiveObject
         _sender.StateChanged += (_, __) => UpdateFromSender();
         _sender.PositionChanged += (_, __) => UpdateFromSender();
 
-        var canIdle = this.WhenAnyValue(x => x.IsBusy).Select(b => !b);
-        var canNotSending = canIdle;
+        var canInteract = this.WhenAnyValue(x => x.IsBusy, x => x.IsLoading, (busy, loading) => !busy && !loading);
+        var canNotSending = canInteract;
 
-        OpenCommand = ReactiveCommand.CreateFromTask(OpenAsync, canNotSending);
+    OpenCommand = ReactiveCommand.CreateFromTask(OpenAsync, canNotSending);
         SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync, this.WhenAnyValue(x => x.FileLength).Select(n => n > 0).CombineLatest(canNotSending, (a,b) => a && b));
         ClearCommand = ReactiveCommand.Create(Clear, canNotSending);
-        StartCommand = ReactiveCommand.Create(Start, this.WhenAnyValue(x => x.FileLength, x => x.IsBusy, (n, busy) => n > 0 && !busy));
+        StartCommand = ReactiveCommand.Create(Start, this.WhenAnyValue(x => x.FileLength, x => x.IsBusy, x => x.IsLoading, (n, busy, loading) => n > 0 && !busy && !loading));
         PauseCommand = ReactiveCommand.Create(Pause, this.WhenAnyValue(x => x.IsBusy));
         // Goto is available when not busy; bounds are validated within the command
         GotoCommand = ReactiveCommand.CreateFromTask(GotoAsync, canNotSending);
         FindNextCommand = ReactiveCommand.CreateFromTask(FindNextAsync, canNotSending);
         FindPrevCommand = ReactiveCommand.CreateFromTask(FindPrevAsync, canNotSending);
+    CancelLoadCommand = ReactiveCommand.Create(CancelLoad, this.WhenAnyValue(x => x.IsLoading));
 
         // Recompute matches when lines change and there is a query
         GCodeLines.CollectionChanged += async (_, __) => { if (!string.IsNullOrWhiteSpace(SearchQuery)) await RecomputeMatchesAsync(); };
@@ -148,68 +222,112 @@ public class FileViewModel : ReactiveObject
         var files = await _dialogs.OpenFilesAsync("Open G-Code", startDir, new[] { gcodeFilter, "All files|*.*" }, allowMultiple: false);
         if (files == null || files.Length == 0) return;
         var file = files[0];
-        string[] lines;
+        IsLoading = true;
+        LoadProgress = 0.0;
+        CancelLoad(); // cancelar si había una carga previa en curso
+        _loadCts = new System.Threading.CancellationTokenSource();
+        var ct = _loadCts.Token;
         try
         {
-            lines = await File.ReadAllLinesAsync(file);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error leyendo archivo");
-            return;
-        }
-
-        try
-        {
-            // Sincronizar flag del parser con settings actuales
-            _parser.IgnoreAdditionalAxes = s.IgnoreAdditionalAxes;
-            _parser.Parse(lines);
-        }
-        catch (ParseException pex)
-        {
-            _logger.LogWarning(pex, "GCode parse error");
-            await _dialogs.AlertAsync("Parse Error", pex.Message);
-            return;
-        }
-
-        if (_parser.Warnings.Count > 0)
-        {
-            const string header = "Warning! Parsing this file resulted in some warnings!\n\nDo not use OpenCNCPilot's edit functions unless you are sure that these warnings can be ignored!\n\nBe aware that the affected lines will likely move when using edit functions.";
-            await _dialogs.ShowWarningsAsync(header, _parser.Warnings);
-        }
-
-    // Popular colecciones
-        GCodeLines.Clear();
-        foreach (var l in lines) GCodeLines.Add(l);
-        _sender.Load(lines);
-        UpdateFromSender();
-    await RecomputeMatchesAsync();
-
-        CurrentFileName = Path.GetFileName(file);
-
-        // Snapshot de comandos parseados (para el viewport)
-        var cmdList = new ObservableCollection<Command>(_parser.Commands);
-        ParsedCommands = new ReadOnlyObservableCollection<Command>(cmdList);
-
-        // Construir geometría (mm) para el viewer moderno
-        if (_parser is GCodeParser concrete)
-        {
-            // Ejecutar en background para no bloquear UI en archivos grandes
+            string[] lines;
             try
             {
-                var geo = await Task.Run(() => _pathBuilder.Build(concrete));
-                GeometryData = geo;
+                // Lectura de archivo (async)
+                var swRead = System.Diagnostics.Stopwatch.StartNew();
+                lines = await File.ReadAllLinesAsync(file, ct);
+                swRead.Stop();
+                LastLoadReadMs = swRead.Elapsed.TotalMilliseconds;
+                LoadProgress = 0.2;
+            }
+            catch (OperationCanceledException)
+            {
+                return;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error construyendo geometría para previsualización");
+                _logger.LogError(ex, "Error leyendo archivo");
+                return;
+            }
+
+            if (ct.IsCancellationRequested) return;
+
+            try
+            {
+                // Parse en background
+                _parser.IgnoreAdditionalAxes = s.IgnoreAdditionalAxes;
+                var swParse = System.Diagnostics.Stopwatch.StartNew();
+                await Task.Run(() => _parser.Parse(lines), ct);
+                swParse.Stop();
+                LastLoadParseMs = swParse.Elapsed.TotalMilliseconds;
+                LoadProgress = 0.6;
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (ParseException pex)
+            {
+                _logger.LogWarning(pex, "GCode parse error");
+                await _dialogs.AlertAsync("Parse Error", pex.Message);
+                return;
+            }
+
+            if (ct.IsCancellationRequested) return;
+
+            if (_parser.Warnings.Count > 0)
+            {
+                const string header = "Warning! Parsing this file resulted in some warnings!\n\nDo not use OpenCNCPilot's edit functions unless you are sure that these warnings can be ignored!\n\nBe aware that the affected lines will likely move when using edit functions.";
+                await _dialogs.ShowWarningsAsync(header, _parser.Warnings);
+            }
+
+            // Popular colecciones (UI)
+            GCodeLines.Clear();
+            foreach (var l in lines) GCodeLines.Add(l);
+            _sender.Load(lines);
+            UpdateFromSender();
+            await RecomputeMatchesAsync();
+
+            CurrentFileName = Path.GetFileName(file);
+
+            // Snapshot de comandos parseados (para el viewport)
+            var cmdList = new ObservableCollection<Command>(_parser.Commands);
+            ParsedCommands = new ReadOnlyObservableCollection<Command>(cmdList);
+
+            // Construir geometría (mm) para el viewer moderno
+            if (_parser is GCodeParser concrete)
+            {
+                try
+                {
+                    var swBuild = System.Diagnostics.Stopwatch.StartNew();
+                    var geo = await Task.Run(() => _pathBuilder.Build(concrete), ct);
+                    swBuild.Stop();
+                    LastLoadBuildMs = swBuild.Elapsed.TotalMilliseconds;
+                    GeometryData = geo;
+                    RapidCount = geo?.RapidCount ?? 0;
+                    CutCount = geo?.CutCount ?? 0;
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error construyendo geometría para previsualización");
+                }
+            }
+
+            var dir = Path.GetDirectoryName(file);
+            if (!string.IsNullOrEmpty(dir))
+            {
+                s.LastGCodeDirectory = dir!;
+                await _settings.SaveAsync(s);
             }
         }
-        var dir = Path.GetDirectoryName(file);
-        if (!string.IsNullOrEmpty(dir))
+        finally
         {
-            s.LastGCodeDirectory = dir!;
-            await _settings.SaveAsync(s);
+            LoadProgress = 1.0;
+            IsLoading = false;
+            CancelLoad(); // limpiar CTS
         }
     }
 
@@ -239,16 +357,26 @@ public class FileViewModel : ReactiveObject
 
     private void Clear()
     {
-    _sender.Clear();
+        CancelLoad();
+        IsLoading = false;
+        LoadProgress = 0.0;
+        _sender.Clear();
         GCodeLines.Clear();
         ParsedCommands = null;
         GeometryData = null;
+        RapidCount = 0;
+        CutCount = 0;
+        LastLoadReadMs = LastLoadParseMs = LastLoadBuildMs = 0;
+        this.RaisePropertyChanged(nameof(LastLoadTotalMs));
+        this.RaisePropertyChanged(nameof(LoadTimingSummary));
         UpdateFromSender();
         CurrentFileName = string.Empty;
     _matchIndices.Clear();
     SearchMatchCount = 0;
     SearchMatchIndex = -1;
     this.RaisePropertyChanged(nameof(SearchStatus));
+        this.RaisePropertyChanged(nameof(MoveSummary));
+        this.RaisePropertyChanged(nameof(MoveCount));
     }
 
     private void Start()
@@ -339,5 +467,20 @@ public class FileViewModel : ReactiveObject
         _sender.Goto(target);
         UpdateFromSender();
         return Task.CompletedTask;
+    }
+
+    private void CancelLoad()
+    {
+        try
+        {
+            if (_loadCts != null)
+            {
+                if (!_loadCts.IsCancellationRequested)
+                    _loadCts.Cancel();
+                _loadCts.Dispose();
+            }
+        }
+        catch { }
+        finally { _loadCts = null; }
     }
 }

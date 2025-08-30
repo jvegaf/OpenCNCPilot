@@ -160,3 +160,26 @@ Fecha: 2025-08-29
 - Arcos y unidades correctos; bounds precisos.
 - UI responsiva; cancelación operativa; errores visibles.
 - Cobertura Core ≥ 70%; CI verde (Linux/Windows).
+
+---
+
+## Bitácora de Iteración (2025-08-30)
+
+- 3.1 Flujo de carga — COMPLETADO
+	- Carga en background con cancelación (`IsLoading`, `LoadProgress`, `CancelLoadCommand`).
+	- Manejo de errores/warnings no bloqueante; actualización de `LastGCodeDirectory`.
+	- Deshabilitado de comandos durante carga/ocupado.
+
+- 4.2 Medición — COMPLETADO
+	- Métricas `LastLoadReadMs/ParseMs/BuildMs/Total` y `LoadTimingSummary`.
+	- Contadores de movimientos `RapidCount/CutCount/MoveCount` y `MoveSummary`.
+
+- 2.x/3.x UI — COMPLETADO
+	- `MainWindow.axaml`: status muestra `LoadTimingSummary` y `MoveSummary`.
+
+- 5.x Tests — COMPLETADO
+	- `FileViewModel_SearchTests`: navegación Next/Prev y conteo de matches.
+	- `FileViewModel_MetricsAndLoadingTests`: formato de métricas y deshabilitado por `IsLoading`.
+	- Correcciones reactivas en tests (`System.Reactive.Linq`).
+
+Validación: `make test` → todas las suites en verde (Core, Integration, UI).
