@@ -54,6 +54,8 @@ public class MainWindowViewModel : ReactiveObject
     private uint _viewerCutColor = 0xFFFF7828;
     private double _viewerRapidStrokeWidth = 1.2;
     private double _viewerCutStrokeWidth = 1.6;
+    private bool _viewerForceSoftwareRendering = false;
+    private bool _viewerShowRenderModeOverlay = true;
     private string _currentFilePath = string.Empty;
     private int _probeGridX = 5;
     private int _probeGridY = 5;
@@ -432,6 +434,18 @@ public class MainWindowViewModel : ReactiveObject
     {
         get => _viewerCutStrokeWidth;
         set => this.RaiseAndSetIfChanged(ref _viewerCutStrokeWidth, value);
+    }
+
+    public bool ViewerForceSoftwareRendering
+    {
+        get => _viewerForceSoftwareRendering;
+        set => this.RaiseAndSetIfChanged(ref _viewerForceSoftwareRendering, value);
+    }
+
+    public bool ViewerShowRenderModeOverlay
+    {
+        get => _viewerShowRenderModeOverlay;
+        set => this.RaiseAndSetIfChanged(ref _viewerShowRenderModeOverlay, value);
     }
 
     public string CurrentFilePath

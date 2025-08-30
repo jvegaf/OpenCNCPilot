@@ -30,6 +30,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
     <PackageReference Include="SkiaSharp" Version="2.88.8" />
+    <!-- Ensure native SkiaSharp libs are available on Linux at runtime for GL-backed Skia surfaces -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.8" />
   </ItemGroup>
 
   <ItemGroup>

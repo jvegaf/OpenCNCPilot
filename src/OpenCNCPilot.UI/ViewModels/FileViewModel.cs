@@ -222,6 +222,13 @@ public class FileViewModel : ReactiveObject
         var files = await _dialogs.OpenFilesAsync("Open G-Code", startDir, new[] { gcodeFilter, "All files|*.*" }, allowMultiple: false);
         if (files == null || files.Length == 0) return;
         var file = files[0];
+        await LoadFromPathAsync(file);
+    }
+
+    public async Task LoadFromPathAsync(string file)
+    {
+        if (string.IsNullOrWhiteSpace(file) || !System.IO.File.Exists(file)) return;
+        var s = await _settings.LoadAsync();
         IsLoading = true;
         LoadProgress = 0.0;
         CancelLoad(); // cancelar si había una carga previa en curso

@@ -63,6 +63,18 @@
 				"/consoleloggerparameters:NoSummary;ForceNoAlign"
 			],
 			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/home/th3g3ntl3man/Code/OpenCNCPilot/OpenCNCPilot.Modern.sln",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary;ForceNoAlign"
+			],
+			"group": "build"
 		}
 	]
 }

@@ -7,6 +7,7 @@
   xmlns:controls="using:OpenCNCPilot.UI.Views.Controls"
   xmlns:views="using:OpenCNCPilot.UI.Views"
   xmlns:ac="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls"
+  xmlns:input="using:Avalonia.Input"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="OpenCNCPilot.UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -124,7 +125,7 @@
       BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
       BorderThickness="1" CornerRadius="5">
   <Grid>
-  <controls:GCodeViewport Commands="{Binding GCodeCommands}"
+  <controls:GCodeViewport x:Name="Viewport" Commands="{Binding GCodeCommands}"
                Geometry="{Binding FileTab.GeometryData}"
                Zoom="{Binding ViewerZoom}"
                RotationX="{Binding ViewerRotationX}"
@@ -138,6 +139,8 @@
                ShowGrid="{Binding ViewerShowGrid}"
                ShowOrigin="{Binding ViewerShowOrigin}"
                ShowBounds="{Binding ViewerShowBounds}"
+               ForceSoftwareRendering="{Binding ViewerForceSoftwareRendering}"
+               ShowRenderModeOverlay="{Binding ViewerShowRenderModeOverlay}"
                GridMinPixelStep="{Binding ViewerGridMinPixelStep}"
                FlattenTolerance="{Binding ViewerFlattenTolerance}"
                EnableSimplification="{Binding ViewerEnableSimplification}"
@@ -171,6 +174,10 @@
                     ToolTip.Tip="Mostrar/Ocultar origen (0,0)"/>
       <ToggleButton Content="▣ Bounds" IsChecked="{Binding ViewerShowBounds}"
                     ToolTip.Tip="Mostrar/Ocultar límites del G-Code"/>
+      <ToggleButton Content="SW Render" IsChecked="{Binding ViewerForceSoftwareRendering}"
+                    ToolTip.Tip="Forzar render por software (fallback)"/>
+      <ToggleButton Content="Overlay" IsChecked="{Binding ViewerShowRenderModeOverlay}"
+                    ToolTip.Tip="Mostrar overlay del modo de render"/>
       <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="8,0,0,0">
         <TextBlock Text="Grid px:" VerticalAlignment="Center"/>
         <ac:NumericUpDown Value="{Binding ViewerGridMinPixelStep}"
